@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% set active = "settings" %}
+
+{% block title %}Ajustes — MuleSoft Manager{% endblock %}
+{% block page_title %}Ajustes globales{% endblock %}
+
+{% block topbar_actions %}
+  <button class="btn btn-primary" onclick="saveAll()">💾 Guardar cambios</button>
+  <button class="btn btn-secondary" onclick="location.reload()">↺ Descartar</button>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start">
+
+  <!-- ── Navegación lateral de ajustes ─────────────────────────────────────── -->
+  <div class="card" style="position:sticky;top:0">
+    <div style="padding:8px">
+      {% for sec_id, sec_label, sec_icon in [
+        ('sec-workspace','Workspace','📁'),
+        ('sec-java','Java JDK','☕'),
+        ('sec-maven','Apache Maven','🏗️'),
+        ('sec-vscode','VS Code','🖥️'),
+        ('sec-ssh','SSH','🔐'),
+        ('sec-git','Git','🌿'),
+      ] %}
+      <a href="#{{ sec_id }}"
+         style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);
+                color:var(--text-2);font-size:13px;text-decoration:none;transition:all var(--transition)"
+         onmouseover="this.style.background='var(--bg-card-h)';this.style.color='var(--text-1)'"
+         onmouseout="this.style.background='';this.style.color='var(--text-2)'">
+        <span>{{ sec_icon }}</span> {{ sec_label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ── Formulario de ajustes ──────────────────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- Workspace -->
+    <div class="card" id="sec-workspace">
+      <div class="card-header">
+        <span style="font-size:18px">📁</span>
+        <div>
+          <div class="card-title">Workspace</div>
+          <div class="card-sub">Información del workspace activo</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Ruta raíz del workspace</label>
+          <input type="text" value="{{ root }}" readonly style="opacity:0.6;cursor:not-allowed">
+          <div class="form-hint">Para cambiar la ruta, ejecuta <code class="text-mono">mulesoft-manager init --path NUEVA_RUTA</code></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="copyText('{{ root }}','Ruta')">📋 Copiar ruta</button>
+          <button class="btn btn-secondary btn-sm" onclick="openExplorer()">📂 Abrir en Explorer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Java -->
+    <div class="card" id="sec-java">
+      <div class="card-header">
+        <span style="font-size:18px">☕</span>
+        <div>
+          <div class="card-title">Java JDK</div>
+          <div class="card-sub">Configuración del Java Development Kit</div>
+        </div>
+        <div class="ml-auto" id="java-status-badge"><span class="spinner" style="width:14px;height:14px"></span></div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Versión preferida</label>
+            <select id="java-version" onchange="markDirty()">
+              {% for v in ['17','21','11'] %}
+              <option value="{{ v }}" {% if cfg.java and cfg.java.version == v %}selected{% endif %}>Java {{ v }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Método de instalación</label>
+            <select id="java-method" onchange="markDirty()">
+              <option value="winget" {% if cfg.java and cfg.java.install_method == 'winget' %}selected{% endif %}>winget (recomendado)</option>
+              <option value="manual" {% if cfg.java and cfg.java.install_method == 'manual' %}selected{% endif %}>Descarga manual</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">JAVA_HOME (ruta manual)</label>
+          <input type="text" id="java-home" value="{{ cfg.java.home if cfg.java and cfg.java.home else '' }}"
+                 placeholder="C:/Program Files/Eclipse Adoptium/jdk-17.x" oninput="markDirty()">
+          <div class="form-hint">Deja vacío para detección automática</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maven -->
+    <div class="card" id="sec-maven">
+      <div class="card-header">
+        <span style="font-size:18px">🏗️</span>
+        <div>
+          <div class="card-title">Apache Maven</div>
+          <div class="card-sub">Gestión de dependencias y build</div>
+        </div>
+        <div class="ml-auto" id="maven-status-badge"><span class="spinner" style="width:14px;height:14px"></span></div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Versión preferida</label>
+            <select id="maven-version" onchange="markDirty()">
+              {% for v in ['3.9.9','3.9.6','3.8.8'] %}
+              <option value="{{ v }}" {% if cfg.maven and cfg.maven.version == v %}selected{% endif %}>Maven {{ v }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Método de instalación</label>
+            <select id="maven-method" onchange="markDirty()">
+              <option value="manual" {% if cfg.maven and cfg.maven.install_method == 'manual' %}selected{% endif %}>Descarga Apache (recomendado)</option>
+              <option value="winget" {% if cfg.maven and cfg.maven.install_method == 'winget' %}selected{% endif %}>winget</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">MAVEN_HOME (ruta manual)</label>
+          <input type="text" id="maven-home" value="{{ cfg.maven.home if cfg.maven and cfg.maven.home else '' }}"
+                 placeholder="C:/MuleSoft/tools/maven/apache-maven-3.9.9" oninput="markDirty()">
+          <div class="form-hint">Deja vacío para detección automática</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VS Code -->
+    <div class="card" id="sec-vscode">
+      <div class="card-header">
+        <span style="font-size:18px">🖥️</span>
+        <div>
+          <div class="card-title">Visual Studio Code</div>
+          <div class="card-sub">Extensiones y configuración del IDE</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Método de instalación</label>
+          <select id="vscode-method" onchange="markDirty()">
+            <option value="winget" {% if cfg.vscode and cfg.vscode.install_method == 'winget' %}selected{% endif %}>winget</option>
+            <option value="manual" {% if cfg.vscode and cfg.vscode.install_method == 'manual' %}selected{% endif %}>Instalador manual</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Extensiones recomendadas</label>
+          <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px">
+            {% for ext in default_extensions %}
+            <label style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:4px;
+                          cursor:pointer;font-size:12px;transition:background var(--transition)"
+                   onmouseover="this.style.background='var(--bg-card-h)'"
+                   onmouseout="this.style.background=''">
+              <input type="checkbox" class="ext-check" value="{{ ext }}"
+                     {% if extensions and ext in extensions %}checked{% endif %}
+                     style="width:auto" onchange="markDirty()">
+              <code class="text-mono" style="font-size:11px">{{ ext }}</code>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="form-hint">Selecciona las extensiones que se instalarán automáticamente</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SSH -->
+    <div class="card" id="sec-ssh">
+      <div class="card-header">
+        <span style="font-size:18px">🔐</span>
+        <div>
+          <div class="card-title">SSH</div>
+          <div class="card-sub">Generación de claves SSH</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tipo de clave predeterminado</label>
+            <select id="ssh-type" onchange="markDirty()">
+              <option value="ed25519" {% if cfg.ssh and cfg.ssh.key_type == 'ed25519' %}selected{% endif %}>ed25519 (recomendado)</option>
+              <option value="rsa" {% if cfg.ssh and cfg.ssh.key_type == 'rsa' %}selected{% endif %}>RSA</option>
+            </select>
+            <div class="form-hint">ed25519 es más seguro y compacto</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bits RSA (solo RSA)</label>
+            <select id="ssh-bits" onchange="markDirty()">
+              {% for bits in [4096, 3072, 2048] %}
+              <option value="{{ bits }}" {% if cfg.ssh and cfg.ssh.key_bits == bits %}selected{% endif %}>{{ bits }} bits</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Git -->
+    <div class="card" id="sec-git">
+      <div class="card-header">
+        <span style="font-size:18px">🌿</span>
+        <div>
+          <div class="card-title">Git</div>
+          <div class="card-sub">Configuración global de Git</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Rama por defecto</label>
+            <input type="text" id="git-branch" value="{{ cfg.git.default_branch if cfg.git else 'main' }}"
+                   placeholder="main" oninput="markDirty()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">autocrlf</label>
+            <select id="git-autocrlf" onchange="markDirty()">
+              {% for v in ['false','true','input'] %}
+              <option value="{{ v }}" {% if (cfg.git and cfg.git.autocrlf == v) or (not cfg.git and v=='false') %}selected{% endif %}>{{ v }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-hint">Recomendado: false para proyectos MuleSoft</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de guardado -->
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-bottom:8px">
+      <button class="btn btn-secondary" onclick="location.reload()">↺ Descartar cambios</button>
+      <button class="btn btn-primary" id="btn-save" onclick="saveAll()">💾 Guardar todos los cambios</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let isDirty = false;
+
+function markDirty() {
+  isDirty = true;
+  document.getElementById('btn-save').style.boxShadow = '0 0 0 2px var(--accent)';
+}
+
+// ── Cargar estado de herramientas ─────────────────────────────────────────
+(async () => {
+  const r = await GET('/api/tools/status');
+  if (!r.ok) return;
+  const badge = (id, ok) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `<span class="badge ${ok ? 'badge-success' : 'badge-danger'}">${ok ? '✓ Instalado' : '✗ No encontrado'}</span>`;
+  };
+  badge('java-status-badge', r.tools.java?.installed);
+  badge('maven-status-badge', r.tools.maven?.installed);
+})();
+
+// ── Guardar toda la configuración ─────────────────────────────────────────
+async function saveAll() {
+  const extensions = Array.from(document.querySelectorAll('.ext-check:checked')).map(c => c.value);
+  const config = {
+    java: {
+      version: document.getElementById('java-version').value,
+      install_method: document.getElementById('java-method').value,
+      home: document.getElementById('java-home').value.trim() || null,
+    },
+    maven: {
+      version: document.getElementById('maven-version').value,
+      install_method: document.getElementById('maven-method').value,
+      home: document.getElementById('maven-home').value.trim() || null,
+    },
+    vscode: {
+      install_method: document.getElementById('vscode-method').value,
+      extensions,
+    },
+    ssh: {
+      key_type: document.getElementById('ssh-type').value,
+      key_bits: parseInt(document.getElementById('ssh-bits').value),
+    },
+    git: {
+      default_branch: document.getElementById('git-branch').value.trim() || 'main',
+      autocrlf: document.getElementById('git-autocrlf').value,
+    },
+  };
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando…';
+  const r = await PUT('/api/config', config);
+  btn.disabled = false; btn.innerHTML = '💾 Guardar todos los cambios';
+  if (r.ok) {
+    toast('Configuración guardada correctamente', 'success');
+    isDirty = false;
+    btn.style.boxShadow = '';
+  } else toast(r.error || 'Error al guardar', 'error');
+}
+
+async function openExplorer() {
+  try {
+    // Esto solo funciona en Windows con el servidor local
+    await POST('/api/open-explorer', {});
+  } catch(e) {
+    toast('Usa el Explorador de Windows para navegar a: {{ root }}', 'info');
+  }
+}
+
+// Advertir al salir si hay cambios sin guardar
+window.addEventListener('beforeunload', e => {
+  if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+{% endblock %}

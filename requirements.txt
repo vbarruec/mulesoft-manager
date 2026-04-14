@@ -1,0 +1,14 @@
+# MuleSoft Manager - Dependencias Python
+# Instalar con: pip install -r requirements.txt
+
+# CLI framework
+click>=8.1.0
+
+# Terminal UI
+rich>=13.0.0
+
+# YAML
+PyYAML>=6.0
+
+# Requests HTTP (para descargas)
+requests>=2.31.0

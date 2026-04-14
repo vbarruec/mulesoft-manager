@@ -1,0 +1,13 @@
+# MuleSoft Manager GUI — Dependencias adicionales para la interfaz web
+# Incluye todo lo de requirements.txt más Flask
+#
+# Instalar con: pip install -r requirements-gui.txt
+
+# === Base (CLI) ===
+click>=8.1.0
+rich>=13.0.0
+PyYAML>=6.0
+requests>=2.31.0
+
+# === GUI Web ===
+flask>=3.0.0

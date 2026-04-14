@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}MuleSoft Manager{% endblock %}</title>
+  <style>
+    /* ===================================================================
+       DESIGN SYSTEM — MuleSoft Manager
+       =================================================================== */
+    :root {
+      --bg-base:      #0d1117;
+      --bg-surface:   #161b22;
+      --bg-card:      #21262d;
+      --bg-card-h:    #2d333b;
+      --bg-input:     #0d1117;
+      --bg-sidebar:   #010409;
+
+      --accent:       #2f81f7;
+      --accent-h:     #1f6feb;
+      --accent-mule:  #00a0df;
+      --accent-soft:  rgba(47,129,247,0.12);
+
+      --success:      #3fb950;
+      --success-soft: rgba(63,185,80,0.12);
+      --warning:      #d29922;
+      --warning-soft: rgba(210,153,34,0.12);
+      --danger:       #f85149;
+      --danger-soft:  rgba(248,81,73,0.12);
+      --purple:       #bc8cff;
+      --purple-soft:  rgba(188,140,255,0.12);
+      --orange:       #ffa657;
+
+      --text-1:       #f0f6fc;
+      --text-2:       #8b949e;
+      --text-3:       #484f58;
+
+      --border:       rgba(240,246,252,0.1);
+      --border-h:     rgba(240,246,252,0.2);
+
+      --radius:       10px;
+      --radius-sm:    6px;
+      --radius-lg:    16px;
+      --sidebar-w:    240px;
+      --header-h:     58px;
+
+      --shadow-sm:  0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md:  0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg:  0 8px 24px rgba(0,0,0,0.5);
+      --shadow-xl:  0 16px 40px rgba(0,0,0,0.6);
+
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+      --transition: 150ms ease;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; font-size: 14px; }
+    body {
+      height: 100%; background: var(--bg-base); color: var(--text-1);
+      font-family: var(--font); line-height: 1.5;
+      display: flex; overflow: hidden;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+    input, select, textarea {
+      font: inherit; color: var(--text-1); background: var(--bg-input);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 7px 11px; outline: none; width: 100%;
+      transition: border-color var(--transition);
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    select option { background: var(--bg-card); }
+
+    /* ── Scrollbar ──────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-2); }
+
+    /* ===================================================================
+       SIDEBAR
+       =================================================================== */
+    .sidebar {
+      width: var(--sidebar-w); min-width: var(--sidebar-w);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      height: 100vh; overflow-y: auto; overflow-x: hidden;
+      position: fixed; left: 0; top: 0; z-index: 100;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      min-height: var(--header-h);
+    }
+    .sidebar-logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent-mule), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .sidebar-logo-text { font-size: 14px; font-weight: 700; color: var(--text-1); line-height: 1.2; }
+    .sidebar-logo-sub { font-size: 10px; color: var(--text-2); font-weight: 400; }
+
+    .nav-section { padding: 16px 8px 8px; }
+    .nav-label {
+      font-size: 10px; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 0 12px; margin-bottom: 4px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: var(--radius-sm);
+      color: var(--text-2); font-size: 13px; font-weight: 500;
+      transition: all var(--transition); cursor: pointer;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: var(--bg-card); color: var(--text-1); text-decoration: none; }
+    .nav-item.active {
+      background: var(--accent-soft); color: var(--accent);
+    }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto; background: var(--accent); color: #fff;
+      font-size: 10px; font-weight: 700; border-radius: 10px;
+      padding: 1px 6px; min-width: 18px; text-align: center;
+    }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 12px 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ===================================================================
+       MAIN LAYOUT
+       =================================================================== */
+    .main {
+      margin-left: var(--sidebar-w); flex: 1;
+      display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+    }
+    .topbar {
+      height: var(--header-h); min-height: var(--header-h);
+      background: var(--bg-surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 24px;
+      gap: 16px; position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title { font-size: 16px; font-weight: 600; color: var(--text-1); }
+    .topbar-sub { font-size: 12px; color: var(--text-2); }
+    .topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+    .page-content {
+      flex: 1; overflow-y: auto; padding: 24px;
+    }
+
+    /* ===================================================================
+       COMPONENTS
+       =================================================================== */
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; border: 1px solid transparent;
+      cursor: pointer; transition: all var(--transition); white-space: nowrap;
+    }
+    .btn:hover { text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-h); color: #fff; }
+    .btn-secondary {
+      background: var(--bg-card); color: var(--text-1);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover { background: var(--bg-card-h); border-color: var(--border-h); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { opacity: 0.9; }
+    .btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+    .btn-danger:hover { background: var(--danger); color: #fff; }
+    .btn-ghost { color: var(--text-2); padding: 6px 10px; }
+    .btn-ghost:hover { background: var(--bg-card); color: var(--text-1); }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn-icon { padding: 7px; border-radius: var(--radius-sm); }
+    .btn[disabled] { opacity: 0.4; pointer-events: none; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .card-sub { font-size: 12px; color: var(--text-2); }
+    .card-body { padding: 20px; }
+    .card-footer {
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      display: flex; gap: 8px; align-items: center;
+    }
+
+    /* Stat cards */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      display: flex; flex-direction: column; gap: 8px;
+      transition: border-color var(--transition), transform var(--transition);
+    }
+    .stat-card:hover { border-color: var(--border-h); transform: translateY(-1px); }
+    .stat-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text-1); line-height: 1; }
+    .stat-label { font-size: 12px; color: var(--text-2); }
+
+    /* Badges */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-success { background: var(--success-soft); color: var(--success); }
+    .badge-warning { background: var(--warning-soft); color: var(--warning); }
+    .badge-danger  { background: var(--danger-soft);  color: var(--danger); }
+    .badge-info    { background: var(--accent-soft);  color: var(--accent); }
+    .badge-purple  { background: var(--purple-soft);  color: var(--purple); }
+    .badge-neutral { background: var(--bg-card-h);    color: var(--text-2); }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      padding: 10px 14px; text-align: left; font-weight: 600; font-size: 11px;
+      color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background var(--transition); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-card-h); }
+    tbody td { padding: 12px 14px; vertical-align: middle; }
+    .td-actions { display: flex; gap: 4px; }
+
+    /* Forms */
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+    .form-hint { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .form-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+    .form-section { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); gap: 0; }
+    .tab-btn {
+      padding: 10px 18px; font-size: 13px; font-weight: 500;
+      color: var(--text-2); border-bottom: 2px solid transparent;
+      cursor: pointer; transition: all var(--transition);
+      margin-bottom: -1px; white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--text-1); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 200; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity var(--transition);
+      padding: 20px;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); width: 100%; max-width: 600px;
+      max-height: 90vh; display: flex; flex-direction: column;
+      box-shadow: var(--shadow-xl);
+      transform: translateY(20px); transition: transform var(--transition);
+    }
+    .modal-backdrop.open .modal { transform: translateY(0); }
+    .modal-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .modal-title { font-size: 16px; font-weight: 600; }
+    .modal-close { margin-left: auto; color: var(--text-2); font-size: 20px; padding: 4px 8px; }
+    .modal-close:hover { color: var(--text-1); }
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+    /* Toast */
+    #toast-container {
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; flex-direction: column; gap: 8px; z-index: 9999;
+    }
+    .toast {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: var(--shadow-md); min-width: 280px; max-width: 400px;
+      animation: slideIn 0.2s ease;
+    }
+    .toast.toast-success { border-left: 3px solid var(--success); }
+    .toast.toast-error   { border-left: 3px solid var(--danger); }
+    .toast.toast-info    { border-left: 3px solid var(--accent); }
+    .toast.toast-warning { border-left: 3px solid var(--warning); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* Code block */
+    .code-block {
+      background: var(--bg-base); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      font-family: var(--font-mono); font-size: 12px; color: var(--success);
+      word-break: break-all; line-height: 1.6;
+    }
+
+    /* Empty state */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 60px 20px; text-align: center;
+      color: var(--text-2);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+    .empty-title { font-size: 16px; font-weight: 600; color: var(--text-1); margin-bottom: 6px; }
+    .empty-sub { font-size: 13px; color: var(--text-2); max-width: 300px; }
+
+    /* Spinner */
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.6s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Progress bar */
+    .progress { height: 4px; background: var(--bg-card-h); border-radius: 2px; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s ease; }
+
+    /* Chip / tag */
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--bg-card-h); border-radius: 20px;
+      padding: 3px 10px; font-size: 12px; color: var(--text-2);
+    }
+    .chip-icon { font-size: 13px; }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid var(--border); }
+
+    /* Flex utils */
+    .flex { display: flex; }
+    .flex-col { display: flex; flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .gap-4 { gap: 16px; }
+    .ml-auto { margin-left: auto; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .mt-4 { margin-top: 16px; }
+    .mb-4 { margin-bottom: 16px; }
+    .text-sm { font-size: 12px; }
+    .text-muted { color: var(--text-2); }
+    .text-danger { color: var(--danger); }
+    .text-success { color: var(--success); }
+    .text-mono { font-family: var(--font-mono); font-size: 12px; }
+    .fw-600 { font-weight: 600; }
+    .w-full { width: 100%; }
+
+    /* Notification dot */
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .dot-success { background: var(--success); }
+    .dot-danger  { background: var(--danger); }
+    .dot-warning { background: var(--warning); }
+    .dot-neutral { background: var(--text-3); }
+
+    /* Search */
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-3); font-size: 14px; pointer-events: none; }
+    .search-wrap input { padding-left: 32px; }
+
+    /* Tooltip */
+    [data-tip] { position: relative; }
+    [data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-1);
+      font-size: 11px; padding: 4px 8px; border-radius: var(--radius-sm);
+      white-space: nowrap; pointer-events: none; z-index: 500; box-shadow: var(--shadow-sm);
+    }
+
+    /* ===================================================================
+       RESPONSIVE
+       =================================================================== */
+    @media (max-width: 900px) {
+      :root { --sidebar-w: 200px; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+  <!-- i18n debe cargarse ANTES del body para que t() esté disponible en scripts de página -->
+  <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===================================================== -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">⚡</div>
+    <div>
+      <div class="sidebar-logo-text">MuleSoft</div>
+      <div class="sidebar-logo-sub">Manager v1.0</div>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label" data-i18n="sidebar.main">Principal</div>
+    <a href="/" class="nav-item {% if active=='dashboard' %}active{% endif %}">
+      <span class="nav-icon">🏠</span>
+      <span data-i18n="nav.dashboard">Dashboard</span>
+    </a>
+    <a href="/clients" class="nav-item {% if active=='clients' %}active{% endif %}">
+      <span class="nav-icon">👥</span>
+      <span data-i18n="nav.clients">Clientes</span>
+      {% if client_count is defined and client_count %}
+        <span class="nav-badge">{{ client_count }}</span>
+      {% endif %}
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label" data-i18n="sidebar.config">Configuración</div>
+    <a href="/tools" class="nav-item {% if active=='tools' %}active{% endif %}">
+      <span class="nav-icon">🔧</span>
+      <span data-i18n="nav.tools">Herramientas</span>
+    </a>
+    <a href="/ssh" class="nav-item {% if active=='ssh' %}active{% endif %}">
+      <span class="nav-icon">🔑</span>
+      <span data-i18n="nav.ssh">SSH / Git</span>
+    </a>
+    <a href="/settings" class="nav-item {% if active=='settings' %}active{% endif %}">
+      <span class="nav-icon">⚙️</span>
+      <span data-i18n="nav.settings">Ajustes</span>
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="nav-item" style="cursor:default">
+      <span class="nav-icon">💻</span>
+      <span style="font-size:11px;color:var(--text-3)" data-i18n="sidebar.cli">Windows · Python CLI</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== MAIN ======================================================== -->
+<div class="main">
+  <!-- Topbar -->
+  <header class="topbar">
+    <div>
+      <div class="topbar-title">{% block page_title %}MuleSoft Manager{% endblock %}</div>
+      {% if page_sub is defined %}
+      <div class="topbar-sub">{{ page_sub }}</div>
+      {% endif %}
+    </div>
+    <div class="topbar-actions">
+      {% block topbar_actions %}{% endblock %}
+      <!-- Toggle de idioma -->
+      <button id="lang-toggle-btn"
+              class="btn btn-ghost btn-sm"
+              onclick="setLang(getLang()==='es'?'en':'es')"
+              title="Switch language / Cambiar idioma"
+              style="font-size:12px;border:1px solid var(--border);margin-left:8px">
+        🌐 EN
+      </button>
+    </div>
+  </header>
+
+  <!-- Page content -->
+  <main class="page-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<!-- ===== TOAST CONTAINER ============================================ -->
+<div id="toast-container"></div>
+
+<!-- ===== GLOBAL JS ================================================== -->
+<script>
+  /* ── Toast ─────────────────────────────────────────────────────────── */
+  function toast(msg, type = 'info', duration = 4000) {
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `<span>${icons[type] || ''}</span><span style="flex:1">${msg}</span>
+      <button onclick="this.parentElement.remove()" style="color:var(--text-3);font-size:16px;padding:0 4px">×</button>`;
+    document.getElementById('toast-container').appendChild(el);
+    if (duration > 0) setTimeout(() => el.remove(), duration);
+    return el;
+  }
+
+  /* ── Modal ─────────────────────────────────────────────────────────── */
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  // Cerrar modal al click fuera
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('modal-backdrop')) {
+      e.target.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  });
+  // Cerrar con Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+        m.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    }
+  });
+
+  /* ── Tabs ───────────────────────────────────────────────────────────── */
+  function initTabs(container) {
+    const btns = container.querySelectorAll('.tab-btn');
+    const panes = container.querySelectorAll('.tab-pane');
+    btns.forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        panes.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const target = document.getElementById(btn.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+  }
+  document.querySelectorAll('.tabs').forEach(initTabs);
+
+  /* ── API fetch helpers ──────────────────────────────────────────────── */
+  async function api(method, url, body = null) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    };
+    if (body !== null) opts.body = JSON.stringify(body);
+    const r = await fetch(url, opts);
+    return r.json();
+  }
+  const GET    = url      => api('GET', url);
+  const POST   = (url, b) => api('POST', url, b);
+  const PUT    = (url, b) => api('PUT', url, b);
+  const DELETE = url      => api('DELETE', url);
+
+  /* ── Copy to clipboard ──────────────────────────────────────────────── */
+  function copyText(text, label) {
+    const lbl = label || t('common.copy');
+    navigator.clipboard.writeText(text).then(() => {
+      const msg = getLang() === 'en'
+        ? `${lbl} copied to clipboard`
+        : `${lbl} copiado al portapapeles`;
+      toast(msg, 'success');
+    });
+  }
+
+  /* ── Confirm dialog ─────────────────────────────────────────────────── */
+  function confirm2(msg, onConfirm) {
+    const backdrop = document.getElementById('modal-confirm');
+    document.getElementById('modal-confirm-msg').textContent = msg;
+    // Actualizar etiquetas del modal con el idioma actual
+    backdrop.querySelector('.modal-title').textContent = t('modal.confirm_title');
+    backdrop.querySelector('.btn-secondary').textContent = t('common.cancel');
+    document.getElementById('modal-confirm-btn').textContent = t('modal.confirm_btn');
+    document.getElementById('modal-confirm-btn').onclick = () => { closeModal('modal-confirm'); onConfirm(); };
+    openModal('modal-confirm');
+  }
+</script>
+
+<!-- Confirm Modal (global) -->
+<div class="modal-backdrop" id="modal-confirm">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span style="font-size:20px">⚠️</span>
+      <div class="modal-title" data-i18n="modal.confirm_title">Confirmar acción</div>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="modal-confirm-msg" style="color:var(--text-2);line-height:1.6"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-i18n="common.cancel" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" data-i18n="modal.confirm_btn" id="modal-confirm-btn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

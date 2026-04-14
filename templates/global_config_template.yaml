@@ -1,0 +1,71 @@
+# =============================================================================
+# Configuración global del workspace MuleSoft
+# Archivo: <workspace_root>/.mulesoft-manager/config.yaml
+# =============================================================================
+
+version: "1.0.0"
+
+# Ruta raíz del workspace (se establece automáticamente al ejecutar init)
+root_path: "C:/MuleSoft"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Java JDK
+# ─────────────────────────────────────────────────────────────────────────────
+java:
+  version: "17"
+  # Método de instalación: winget | manual
+  install_method: "winget"
+  # Ruta al JDK instalado (null = detectar automáticamente)
+  # home: "C:/Program Files/Eclipse Adoptium/jdk-17.0.x+y"
+  home: null
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Apache Maven
+# ─────────────────────────────────────────────────────────────────────────────
+maven:
+  version: "3.9.9"
+  install_method: "manual"
+  # home: "C:/MuleSoft/tools/maven/apache-maven-3.9.9"
+  home: null
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Visual Studio Code
+# ─────────────────────────────────────────────────────────────────────────────
+vscode:
+  install_method: "winget"
+  extensions:
+    # MuleSoft / Anypoint
+    - salesforce.mulesoft-pack
+    # Java
+    - redhat.java
+    - vscjava.vscode-java-pack
+    - vscjava.vscode-java-debug
+    - vscjava.vscode-maven
+    # XML / YAML
+    - redhat.vscode-xml
+    - redhat.vscode-yaml
+    # Git
+    - eamodio.gitlens
+    - mhutchie.git-graph
+    - donjayamanne.githistory
+    # Utilidades
+    - ms-vscode.powershell
+    - ms-vscode-remote.remote-ssh
+    - streetsidesoftware.code-spell-checker
+    - yzhang.markdown-all-in-one
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Git global
+# ─────────────────────────────────────────────────────────────────────────────
+git:
+  default_branch: "main"
+  autocrlf: "false"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SSH
+# ─────────────────────────────────────────────────────────────────────────────
+ssh:
+  # Tipo de clave: ed25519 (recomendado) | rsa
+  key_type: "ed25519"
+  # Solo relevante para RSA
+  key_bits: 4096

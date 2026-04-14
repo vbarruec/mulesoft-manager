@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+
+{% block title %}Dashboard — MuleSoft Manager{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  {% if initialized %}
+    <span class="chip"><span class="dot dot-success"></span>Workspace activo</span>
+    <button class="btn btn-primary" onclick="openModal('modal-add-client')">
+      ＋ Nuevo cliente
+    </button>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not initialized %}
+<!-- ══ ESTADO: NO INICIALIZADO ══════════════════════════════════════════════ -->
+<div style="max-width:560px;margin:40px auto">
+  <div class="card">
+    <div class="card-body" style="text-align:center;padding:48px 40px">
+      <div style="font-size:56px;margin-bottom:20px">⚡</div>
+      <h2 style="font-size:22px;margin-bottom:8px">Bienvenido a MuleSoft Manager</h2>
+      <p style="color:var(--text-2);margin-bottom:32px;line-height:1.7">
+        Gestión normalizada de entornos MuleSoft para consultoras con múltiples clientes,
+        distintas regiones de Anypoint y distintas plataformas de control de versiones.
+      </p>
+      <button class="btn btn-primary" style="font-size:15px;padding:11px 28px"
+              onclick="openModal('modal-init')">
+        🚀 Inicializar Workspace
+      </button>
+    </div>
+    <div style="background:var(--bg-base);padding:20px 32px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">
+        Lo que se creará
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        {% for item in [
+          ('📁','Árbol de carpetas normalizado'),
+          ('🔑','Gestión de claves SSH'),
+          ('🪪','Git config aislado por cliente'),
+          ('🖥️','Workspaces VS Code automáticos'),
+          ('☕','Java + Maven configurados'),
+          ('☁️','Maven settings por región Mule'),
+        ] %}
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);padding:6px 0">
+          <span>{{ item[0] }}</span> {{ item[1] }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Init Workspace -->
+<div class="modal-backdrop" id="modal-init">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <span style="font-size:22px">🚀</span>
+      <div class="modal-title">Inicializar Workspace</div>
+      <button class="modal-close" onclick="closeModal('modal-init')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Ruta raíz del workspace</label>
+        <input type="text" id="init-path" value="C:/MuleSoft" placeholder="C:/MuleSoft">
+        <div class="form-hint">Se creará la estructura de carpetas en esta ruta</div>
+      </div>
+      <div style="background:var(--warning-soft);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:12px 14px;font-size:12px;color:var(--text-2)">
+        ⚠️ Asegúrate de tener <strong style="color:var(--text-1)">Python 3.10+</strong>,
+        <strong style="color:var(--text-1)">Git para Windows</strong>
+        y permisos de escritura en la ruta indicada.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-init')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-init" onclick="doInit()">🚀 Inicializar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+async function doInit() {
+  const path = document.getElementById('init-path').value.trim();
+  if (!path) return toast('Indica una ruta', 'warning');
+  const btn = document.getElementById('btn-init');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Inicializando…';
+  const r = await POST('/api/workspace/init', { path });
+  if (r.ok) {
+    toast('¡Workspace creado en ' + r.root + '!', 'success', 0);
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    toast(r.error || 'Error al inicializar', 'error');
+    btn.disabled = false; btn.innerHTML = '🚀 Inicializar';
+  }
+}
+</script>
+
+{% else %}
+<!-- ══ DASHBOARD PRINCIPAL ══════════════════════════════════════════════════ -->
+
+<!-- Workspace path banner -->
+<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;
+            background:var(--bg-surface);border:1px solid var(--border);
+            border-radius:var(--radius);margin-bottom:24px;font-size:12px">
+  <span>📁</span>
+  <span class="text-mono text-muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ root }}</span>
+  <button class="btn btn-ghost btn-sm" onclick="copyText('{{ root }}','Ruta')">📋 Copiar</button>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid" style="margin-bottom:24px">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:var(--accent-soft)">👥</div>
+    <div class="stat-value" style="color:var(--accent)">{{ client_count }}</div>
+    <div class="stat-label">Clientes configurados</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:var(--success-soft)">📦</div>
+    <div class="stat-value" style="color:var(--success)">{{ cloned_repos }}</div>
+    <div class="stat-label">Repos clonados / {{ total_repos }} totales</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:var(--purple-soft)">🔧</div>
+    <div class="stat-value" style="color:var(--purple)">{{ tools_ok }}<span style="font-size:16px;color:var(--text-3)">/4</span></div>
+    <div class="stat-label">Herramientas instaladas</div>
+  </div>
+  <div class="stat-card" onclick="window.location='/clients'" style="cursor:pointer">
+    <div class="stat-icon" style="background:var(--warning-soft)">➕</div>
+    <div class="stat-value" style="font-size:20px;color:var(--warning);padding-top:6px">Nuevo cliente</div>
+    <div class="stat-label">Añadir configuración</div>
+  </div>
+</div>
+
+<!-- Clientes grid + Quick actions -->
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start">
+
+  <!-- Clientes list -->
+  <div class="card">
+    <div class="card-header" style="justify-content:space-between">
+      <div>
+        <div class="card-title">Clientes</div>
+        <div class="card-sub">{{ client_count }} cliente{{ 's' if client_count != 1 else '' }}</div>
+      </div>
+      <a href="/clients" class="btn btn-ghost btn-sm">Ver todos →</a>
+    </div>
+    {% if clients %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th><th>VCS</th><th>Región</th><th>Repos</th><th>Estado</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in clients %}
+          <tr>
+            <td>
+              <div style="font-weight:600">{{ c.display_name }}</div>
+              <div style="font-size:11px;color:var(--text-3)">{{ c.name }}</div>
+            </td>
+            <td>
+              <span class="badge badge-info">{{ c.vcs_display }}</span>
+            </td>
+            <td>
+              <span class="badge {% if c.mule_region == 'eu' %}badge-purple{% else %}badge-info{% endif %}">
+                {{ c.mule_region.upper() }}
+              </span>
+            </td>
+            <td>
+              <span style="color:{{ 'var(--success)' if c.cloned_count == c.repo_count else 'var(--warning)' }}">
+                {{ c.cloned_count }}/{{ c.repo_count }}
+              </span>
+            </td>
+            <td>
+              {% if c.ssh_key_exists and c.workspace_exists %}
+                <span class="badge badge-success">✓ Listo</span>
+              {% else %}
+                <span class="badge badge-warning">⚠ Incompleto</span>
+              {% endif %}
+            </td>
+            <td class="td-actions">
+              <a href="/clients?selected={{ c.name }}" class="btn btn-ghost btn-sm" data-tip="Ver detalle">👁</a>
+              <button class="btn btn-ghost btn-sm" onclick="syncClient('{{ c.name }}')" data-tip="Sincronizar repos">🔄</button>
+              <button class="btn btn-ghost btn-sm" onclick="openVSCode('{{ c.name }}')" data-tip="Abrir VS Code">🖥️</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:40px">
+      <div class="empty-icon">👥</div>
+      <div class="empty-title">Sin clientes</div>
+      <div class="empty-sub">Añade tu primer cliente para empezar</div>
+      <button class="btn btn-primary mt-3" onclick="openModal('modal-add-client')">➕ Añadir cliente</button>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Acciones rápidas -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">⚡ Acciones rápidas</div></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:8px;padding:12px">
+        <button class="btn btn-primary w-full" onclick="openModal('modal-add-client')">➕ Nuevo cliente</button>
+        <a href="/clients" class="btn btn-secondary w-full" style="justify-content:center">👥 Gestionar clientes</a>
+        <a href="/tools" class="btn btn-secondary w-full" style="justify-content:center">🔧 Herramientas</a>
+        <a href="/ssh" class="btn btn-secondary w-full" style="justify-content:center">🔑 SSH / Git</a>
+      </div>
+    </div>
+
+    <div class="card" id="tools-summary-card">
+      <div class="card-header"><div class="card-title">🔧 Herramientas</div></div>
+      <div class="card-body" style="padding:12px 16px;display:flex;flex-direction:column;gap:8px" id="tools-list">
+        <div style="text-align:center;padding:10px"><span class="spinner"></span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endif %}
+
+<!-- ══ MODAL: Añadir cliente rápido ══════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-add-client">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <span style="font-size:22px">👥</span>
+      <div class="modal-title">Nuevo cliente MuleSoft</div>
+      <button class="modal-close" onclick="closeModal('modal-add-client')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Indicador de autocompletado -->
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <span style="font-size:11px;color:var(--accent);display:flex;align-items:center;gap:5px">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>
+          Los campos en azul se sugieren al escribir el nombre
+        </span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">ID interno *</label>
+          <input type="text" id="nc-name" placeholder="acme_corp"
+                 autocomplete="off" spellcheck="false">
+          <div class="form-hint">Escribe el nombre y el resto se autocompleta</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nombre completo *</label>
+          <input type="text" id="nc-display" placeholder="ACME Corporation">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">VCS *</label>
+          <select id="nc-vcs">
+            {% for k, v in vcs_types.items() %}
+            <option value="{{ k }}">{{ v.display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Región Mule *</label>
+          <select id="nc-region">
+            {% for k, v in mule_regions.items() %}
+            <option value="{{ k }}">{{ k.upper() }} — {{ v.display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Host VCS</label>
+        <input type="text" id="nc-host" placeholder="github.com">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:6px">
+            Usuario git *
+            <span id="nc-username-auto-badge" style="display:none;font-size:10px;font-weight:400;
+              color:var(--accent);background:var(--accent-soft);padding:1px 6px;border-radius:10px">
+              sugerido
+            </span>
+          </label>
+          <input type="text" id="nc-username" placeholder="mi_usuario" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email git *</label>
+          <input type="email" id="nc-email" placeholder="usuario@empresa.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="display:flex;align-items:center;gap:6px">
+          Organización / namespace
+          <span id="nc-org-auto-badge" style="display:none;font-size:10px;font-weight:400;
+            color:var(--accent);background:var(--accent-soft);padding:1px 6px;border-radius:10px">
+            sugerido
+          </span>
+        </label>
+        <input type="text" id="nc-org" placeholder="mi-org" autocomplete="off">
+      </div>
+      <div style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--text-2)">
+        ℹ️ Se generará automáticamente la clave SSH. Podrás añadir repositorios después desde la sección <strong style="color:var(--text-1)">Clientes</strong>.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-client')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-add-client" onclick="addClient()">➕ Crear cliente</button>
+    </div>
+  </div>
+</div>
+
+{% if initialized %}
+<script>
+// ── Cargar estado de herramientas ──────────────────────────────────────────
+(async () => {
+  const r = await GET('/api/tools/status');
+  if (!r.ok) return;
+  const list = document.getElementById('tools-list');
+  const icons = { java:'☕', maven:'🏗️', vscode:'🖥️', git:'🌿', ssh_keygen:'🔐' };
+  const labels = { java:'Java JDK', maven:'Apache Maven', vscode:'VS Code', git:'Git', ssh_keygen:'ssh-keygen' };
+  list.innerHTML = Object.entries(r.tools).map(([k, v]) => `
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="width:20px">${icons[k]||'•'}</span>
+      <span style="flex:1;font-size:12px">${labels[k]||k}</span>
+      <span class="badge ${v.installed ? 'badge-success' : 'badge-danger'}" style="font-size:10px">
+        ${v.installed ? '✓' : '✗'}
+      </span>
+    </div>
+  `).join('');
+})();
+
+// ── Sync cliente ───────────────────────────────────────────────────────────
+async function syncClient(name) {
+  toast('Sincronizando repos de ' + name + '…', 'info');
+  const r = await POST(`/api/clients/${name}/sync`, { full: false });
+  if (r.ok) {
+    const ok = Object.values(r.results).filter(x => x.ok).length;
+    toast(`Sync completado: ${ok}/${Object.keys(r.results).length} repos`, 'success');
+  } else {
+    toast(r.error || 'Error en sync', 'error');
+  }
+}
+
+// ── Abrir VS Code ──────────────────────────────────────────────────────────
+async function openVSCode(name) {
+  const r = await POST(`/api/clients/${name}/open`, {});
+  if (!r.ok) toast(r.error || 'VS Code no disponible', 'warning');
+  else toast('Abriendo VS Code…', 'success');
+}
+
+// ── Añadir cliente ─────────────────────────────────────────────────────────
+const vcsDefaults = {{ vcs_types | tojson }};
+document.getElementById('nc-vcs').addEventListener('change', function() {
+  const info = vcsDefaults[this.value] || {};
+  document.getElementById('nc-host').value = info.default_host || '';
+});
+document.getElementById('nc-vcs').dispatchEvent(new Event('change'));
+
+// ── Auto-derivación de nombres (misma lógica que config.py) ───────────────
+function deriveClientNames(raw) {
+  const normalized = raw.trim().toLowerCase()
+    .replace(/[\s\-]+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .replace(/^_+|_+$/g, '');
+  if (!normalized) return null;
+  const segments = normalized.split('_').filter(Boolean);
+  return {
+    name:     normalized,
+    display:  segments.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' '),
+    org:      segments.join('-'),
+    username: segments.join('-'),
+  };
+}
+
+function markAuto(el, value) {
+  el.value = value;
+  el.dataset.auto = '1';
+  el.style.borderColor = 'var(--accent)';
+  const badge = document.getElementById(el.id + '-auto-badge');
+  if (badge) badge.style.display = '';
+}
+function clearAuto(el) {
+  el.dataset.auto = '0';
+  el.style.borderColor = '';
+  const badge = document.getElementById(el.id + '-auto-badge');
+  if (badge) badge.style.display = 'none';
+}
+
+(function initAutofill() {
+  const nameEl    = document.getElementById('nc-name');
+  const displayEl = document.getElementById('nc-display');
+  const orgEl     = document.getElementById('nc-org');
+  const userEl    = document.getElementById('nc-username');
+  if (!nameEl) return;
+
+  [displayEl, orgEl, userEl].forEach(el => {
+    if (el) el.addEventListener('input', () => clearAuto(el));
+  });
+
+  nameEl.addEventListener('input', () => {
+    const d = deriveClientNames(nameEl.value);
+    if (!d) {
+      [displayEl, orgEl, userEl].forEach(el => {
+        if (el && el.dataset.auto === '1') { el.value = ''; clearAuto(el); }
+      });
+      return;
+    }
+    if (displayEl && (!displayEl.value.trim() || displayEl.dataset.auto === '1')) markAuto(displayEl, d.display);
+    if (orgEl    && (!orgEl.value.trim()     || orgEl.dataset.auto    === '1')) markAuto(orgEl, d.org);
+    if (userEl   && (!userEl.value.trim()    || userEl.dataset.auto   === '1')) markAuto(userEl, d.username);
+
+    // Normalizar el campo nombre preservando el cursor
+    if (!/[\s\-]$/.test(nameEl.value)) {
+      const cursor = nameEl.selectionStart;
+      nameEl.value = d.name;
+      try { nameEl.setSelectionRange(cursor, cursor); } catch(e) {}
+    }
+  });
+})();
+
+async function addClient() {
+  const username = document.getElementById('nc-username').value.trim();
+  const data = {
+    name:         document.getElementById('nc-name').value.trim(),
+    display_name: document.getElementById('nc-display').value.trim(),
+    mule_region:  document.getElementById('nc-region').value,
+    vcs: {
+      type:         document.getElementById('nc-vcs').value,
+      host:         document.getElementById('nc-host').value.trim(),
+      username:     username,
+      git_name:     username,
+      email:        document.getElementById('nc-email').value.trim(),
+      organization: document.getElementById('nc-org').value.trim(),
+    },
+    repositories: [],
+    generate_key: true,
+    clone_repos: false,
+  };
+  if (!data.name || !data.vcs.username || !data.vcs.email) {
+    return toast('Rellena los campos obligatorios (*)', 'warning');
+  }
+  const btn = document.getElementById('btn-add-client');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Creando…';
+  const r = await POST('/api/clients', data);
+  if (r.ok) {
+    toast('¡Cliente ' + r.client.display_name + ' creado!', 'success');
+    closeModal('modal-add-client');
+    setTimeout(() => window.location = '/clients?selected=' + r.client.name, 800);
+  } else {
+    toast(r.error || (r.errors || []).join(', ') || 'Error', 'error');
+    btn.disabled = false; btn.innerHTML = '➕ Crear cliente';
+  }
+}
+</script>
+{% endif %}
+{% endblock %}

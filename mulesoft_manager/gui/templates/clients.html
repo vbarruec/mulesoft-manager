@@ -1,0 +1,717 @@
+{% extends "base.html" %}
+{% set active = "clients" %}
+{% set client_count = clients | length %}
+
+{% block title %}Clientes — MuleSoft Manager{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+
+{% block topbar_actions %}
+  <button class="btn btn-primary" onclick="openModal('modal-add-client')" data-i18n="clients.new_btn">➕ Nuevo cliente</button>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:300px 1fr;gap:20px;height:calc(100vh - var(--header-h) - 48px)">
+
+  <!-- ══ PANEL IZQUIERDO: Lista de clientes ══════════════════════════════════ -->
+  <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="client-search" data-i18n-placeholder="clients.search" placeholder="Buscar cliente…" oninput="filterClients()">
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto" id="client-list">
+      {% if clients %}
+        {% for c in clients %}
+        <div class="client-item" data-name="{{ c.name }}" data-display="{{ c.display_name }}"
+             onclick="selectClient('{{ c.name }}')"
+             style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;
+                    transition:background var(--transition);display:flex;align-items:center;gap:10px
+                    {% if selected == c.name %};background:var(--accent-soft){% endif %}">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--bg-card-h);
+                      display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+            {{ '🇪🇺' if c.mule_region == 'eu' else '🇺🇸' }}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              {{ c.display_name }}
+            </div>
+            <div style="font-size:11px;color:var(--text-2);display:flex;align-items:center;gap:6px;margin-top:2px">
+              <span>{{ c.vcs_display }}</span>
+              <span style="color:var(--border)">·</span>
+              <span>{{ c.repo_count }} repo{{ 's' if c.repo_count != 1 else '' }}</span>
+            </div>
+          </div>
+          <div>
+            {% if c.ssh_key_exists and c.workspace_exists %}
+              <span class="dot dot-success"></span>
+            {% else %}
+              <span class="dot dot-warning"></span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">👥</div>
+          <div class="empty-title" data-i18n="clients.empty">Sin clientes</div>
+          <div class="empty-sub" data-i18n="clients.empty_sub">Añade tu primer cliente</div>
+          <button class="btn btn-primary mt-3" onclick="openModal('modal-add-client')" data-i18n="clients.add_btn">➕ Añadir</button>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ══ PANEL DERECHO: Detalle del cliente ══════════════════════════════════ -->
+  <div style="overflow-y:auto" id="detail-panel">
+    {% if selected %}
+      <div id="client-detail-content"></div>
+    {% else %}
+      <div class="empty-state" style="height:100%">
+        <div class="empty-icon">👈</div>
+        <div class="empty-title" data-i18n="clients.hint_title">Selecciona un cliente</div>
+        <div class="empty-sub" data-i18n="clients.hint_sub">Haz clic en un cliente de la lista para ver su detalle</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ══ MODAL: Añadir cliente ══════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-add-client">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <span style="font-size:22px">👥</span>
+      <div class="modal-title" data-i18n="modal.new_client">Nuevo cliente MuleSoft</div>
+      <button class="modal-close" onclick="closeModal('modal-add-client')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Identificación -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="form-section" style="margin-bottom:0" data-i18n="modal.section_id">Identificación</div>
+        <span style="font-size:11px;color:var(--accent);display:flex;align-items:center;gap:5px">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>
+          <span data-i18n="clients.autofill_hint">Los campos en azul se sugieren automáticamente</span>
+        </span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-i18n="form.id">ID interno *</label>
+          <input type="text" id="nc-name" data-i18n-placeholder="form.id" placeholder="acme_corp"
+                 autocomplete="off" spellcheck="false">
+          <div class="form-hint" data-i18n="clients.id_hint">Escribe el nombre y el resto se autocompleta</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="form.display">Nombre completo *</label>
+          <input type="text" id="nc-display" placeholder="ACME Corporation">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="form.region">Región Anypoint *</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          {% for k, v in mule_regions.items() %}
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all var(--transition)" class="region-opt">
+            <input type="radio" name="nc-region" value="{{ k }}" {% if k=='us' %}checked{% endif %} style="width:auto">
+            <span style="font-size:18px">{{ '🇺🇸' if k=='us' else '🇪🇺' }}</span>
+            <span style="font-size:12px">
+              <strong>{{ k.upper() }}</strong><br>
+              <span style="color:var(--text-2)">{{ v.display }}</span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <hr class="form-divider">
+      <div class="form-section" data-i18n="modal.section_vcs">Control de versiones (VCS)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-i18n="form.vcs_type">Tipo de VCS *</label>
+          <select id="nc-vcs" onchange="onVcsChange()">
+            {% for k, v in vcs_types.items() %}
+            <option value="{{ k }}" data-host="{{ v.default_host }}">{{ v.display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="form.host">Host del servidor</label>
+          <input type="text" id="nc-host" placeholder="github.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:6px" data-i18n="form.username">
+            Usuario git *
+            <span id="nc-username-auto-badge" style="display:none;font-size:10px;font-weight:400;
+              color:var(--accent);background:var(--accent-soft);padding:1px 6px;border-radius:10px" data-i18n="common.suggested">
+              sugerido
+            </span>
+          </label>
+          <input type="text" id="nc-username" placeholder="mi_usuario_github" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="form.email">Email git *</label>
+          <input type="email" id="nc-email" placeholder="dev@empresa.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="display:flex;align-items:center;gap:6px" data-i18n="form.org">
+          Organización / namespace
+          <span id="nc-org-auto-badge" style="display:none;font-size:10px;font-weight:400;
+            color:var(--accent);background:var(--accent-soft);padding:1px 6px;border-radius:10px" data-i18n="common.suggested">
+            sugerido
+          </span>
+        </label>
+        <input type="text" id="nc-org" placeholder="mi-organizacion" autocomplete="off">
+      </div>
+
+      <div id="codecommit-extra" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" data-i18n="form.aws_region">Región AWS</label>
+            <input type="text" id="nc-aws-region" placeholder="eu-west-1">
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="form.cc_user">CodeCommit SSH User ID</label>
+            <input type="text" id="nc-cc-user" placeholder="APKA...">
+          </div>
+        </div>
+      </div>
+
+      <hr class="form-divider">
+      <div class="form-section" data-i18n="modal.section_ap">Credenciales Anypoint Platform (opcional)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-i18n="form.ap_user">Usuario Anypoint</label>
+          <input type="text" id="nc-ap-user" placeholder="usuario@empresa.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="form.ap_pass">Password Anypoint</label>
+          <input type="password" id="nc-ap-pass" placeholder="••••••••">
+        </div>
+      </div>
+
+      <div style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--text-2)" data-i18n="modal.info_ssh">
+        ℹ️ Se generará automáticamente la clave SSH. Podrás añadir repositorios después desde el detalle del cliente.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-client')" data-i18n="common.cancel">Cancelar</button>
+      <button class="btn btn-primary" id="btn-add-client" onclick="addClient()" data-i18n="modal.create_btn">➕ Crear cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Añadir repositorio ══════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-add-repo">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span style="font-size:20px">📦</span>
+      <div class="modal-title" data-i18n="modal.add_repo">Añadir repositorio</div>
+      <button class="modal-close" onclick="closeModal('modal-add-repo')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" data-i18n="form.repo_name">Nombre del repositorio *</label>
+        <input type="text" id="repo-name" placeholder="api-clientes">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="form.repo_url">URL SSH</label>
+        <input type="text" id="repo-url" placeholder="git@github.com:org/repo.git">
+        <div class="form-hint" data-i18n="form.repo_url_hint">Opcional. Si está vacío se construye automáticamente usando el alias SSH.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="form.branch">Rama principal</label>
+        <input type="text" id="repo-branch" value="main" placeholder="main">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="form.description">Descripción</label>
+        <input type="text" id="repo-desc" placeholder="API de gestión de clientes">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-repo')" data-i18n="common.cancel">Cancelar</button>
+      <button class="btn btn-primary" id="btn-add-repo" onclick="addRepo()" data-i18n="modal.add_repo_btn">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Ver clave pública ═══════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-pubkey">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <span style="font-size:20px">🔑</span>
+      <div class="modal-title" data-i18n="modal.pub_key">Clave pública SSH</div>
+      <button class="modal-close" onclick="closeModal('modal-pubkey')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-2);font-size:12px;margin-bottom:12px" id="pubkey-instructions"></p>
+      <div class="code-block" id="pubkey-text" style="word-break:break-all;line-height:1.5"></div>
+      <button class="btn btn-secondary mt-3" onclick="copyText(document.getElementById('pubkey-text').textContent,t('modal.pub_key'))" data-i18n="common.copy">📋 Copiar clave</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modal-pubkey')" data-i18n="common.close">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const VCS_TYPES = {{ vcs_types | tojson }};
+let currentClient = '{{ selected or "" }}';
+
+/* ── Lista de clientes ──────────────────────────────────────────────────── */
+function filterClients() {
+  const q = document.getElementById('client-search').value.toLowerCase();
+  document.querySelectorAll('.client-item').forEach(el => {
+    const match = el.dataset.name.includes(q) || el.dataset.display.toLowerCase().includes(q);
+    el.style.display = match ? '' : 'none';
+  });
+}
+
+function selectClient(name) {
+  // Resaltar selección
+  document.querySelectorAll('.client-item').forEach(el => {
+    el.style.background = el.dataset.name === name ? 'var(--accent-soft)' : '';
+  });
+  currentClient = name;
+  loadClientDetail(name);
+  window.history.pushState({}, '', '/clients?selected=' + name);
+}
+
+async function loadClientDetail(name) {
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px"><span class="spinner"></span></div>';
+  const r = await GET(`/api/clients/${name}`);
+  if (!r.ok) { panel.innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-title">Error cargando cliente</div></div>'; return; }
+  renderClientDetail(r.client);
+}
+
+function renderClientDetail(c) {
+  const panel = document.getElementById('detail-panel');
+  const repoRows = c.repositories.map(r => `
+    <tr>
+      <td><strong>${r.name}</strong>${r.description ? '<br><span style="color:var(--text-2);font-size:11px">'+r.description+'</span>' : ''}</td>
+      <td><code class="text-mono" style="font-size:11px">${r.branch}</code></td>
+      <td>${r.url ? '<span class="text-mono" style="font-size:10px;color:var(--text-3)">'+r.url.substring(0,50)+'</span>' : '<span style="color:var(--text-3);font-size:11px">auto</span>'}</td>
+      <td>${r.cloned ? '<span class="badge badge-success">✓ Clonado</span>' : '<span class="badge badge-neutral">⬜ Pendiente</span>'}</td>
+      <td class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="removeRepo('${c.name}','${r.name}')" data-tip="Eliminar">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+
+  const configFiles = [
+    ['🔒 SSH privada', c.ssh_key_exists],
+    ['🔑 SSH pública', c.pub_key_exists],
+    ['📄 .gitconfig', c.gitconfig_exists],
+    ['🖥️ VS Code workspace', c.workspace_exists],
+    ['☁️ Maven settings.xml', c.maven_settings_exists],
+  ];
+
+  panel.innerHTML = `
+    <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <div style="width:48px;height:48px;border-radius:14px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:24px">
+        ${ c.mule_region === 'eu' ? '🇪🇺' : '🇺🇸' }
+      </div>
+      <div>
+        <h2 style="font-size:18px;font-weight:700">${c.display_name}</h2>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <span class="badge badge-info">${c.vcs_display}</span>
+          <span class="badge ${c.mule_region==='eu'?'badge-purple':'badge-info'}">${c.mule_region.toUpperCase()}</span>
+          <span class="badge ${c.ssh_key_exists && c.workspace_exists ? 'badge-success' : 'badge-warning'}">
+            ${c.ssh_key_exists && c.workspace_exists ? '✓ Configurado' : '⚠ Incompleto'}
+          </span>
+        </div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="syncClient('${c.name}')" data-tip="Sincronizar repos">🔄 Sync</button>
+        <button class="btn btn-secondary btn-sm" onclick="openVSCode('${c.name}')" data-tip="Abrir VS Code">🖥️ VS Code</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteClient('${c.name}','${c.display_name}')">🗑</button>
+      </div>
+    </div>
+
+    <div class="tabs mb-4" id="tabs-${c.name}">
+      <div class="tab-btn active" data-tab="tab-general">General</div>
+      <div class="tab-btn" data-tab="tab-repos">Repositorios <span class="nav-badge" style="margin-left:6px">${c.repo_count}</span></div>
+      <div class="tab-btn" data-tab="tab-config">Configuración</div>
+      <div class="tab-btn" data-tab="tab-anypoint">Anypoint</div>
+    </div>
+
+    <!-- Tab General -->
+    <div class="tab-pane active" id="tab-general">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🌐 VCS</div></div>
+          <div class="card-body" style="font-size:13px;display:flex;flex-direction:column;gap:10px">
+            ${infoRow('Tipo', c.vcs_display)}
+            ${infoRow('Host', c.vcs_host)}
+            ${infoRow('Usuario', c.vcs_username)}
+            ${infoRow('Email', c.vcs_email)}
+            ${infoRow('Organización', c.vcs_organization || '—')}
+            ${infoRow('SSH Alias', '<code class="text-mono" style="font-size:11px">'+c.ssh_alias+'</code>')}
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-ghost btn-sm" onclick="showEditVcs('${c.name}')">✏️ Editar VCS</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">☁️ Anypoint Platform</div></div>
+          <div class="card-body" style="font-size:13px;display:flex;flex-direction:column;gap:10px">
+            ${infoRow('Región', c.mule_region_display)}
+            ${infoRow('URL', '<span style="font-size:11px">'+c.anypoint_url+'</span>')}
+            ${infoRow('Usuario', c.anypoint_username || '<span style="color:var(--text-3)">No configurado</span>')}
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-ghost btn-sm" onclick="showEditRegion('${c.name}','${c.mule_region}')">🌍 Cambiar región</button>
+            <button class="btn btn-ghost btn-sm" onclick="showEditAnypoint('${c.name}')">🔐 Credenciales</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Repos -->
+    <div class="tab-pane" id="tab-repos">
+      <div class="card">
+        <div class="card-header" style="justify-content:space-between">
+          <div>
+            <div class="card-title">📦 Repositorios</div>
+            <div class="card-sub">${c.cloned_count} de ${c.repo_count} clonados</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="syncClient('${c.name}',true)">🔄 Clonar pendientes</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-repo')">➕ Añadir repo</button>
+          </div>
+        </div>
+        ${c.repositories.length ? `
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Repositorio</th><th>Rama</th><th>URL</th><th>Estado</th><th></th></tr></thead>
+            <tbody>${repoRows}</tbody>
+          </table>
+        </div>` : `
+        <div class="empty-state" style="padding:32px">
+          <div class="empty-icon">📦</div>
+          <div class="empty-title">Sin repositorios</div>
+          <div class="empty-sub">Añade los repos de código de este cliente</div>
+          <button class="btn btn-primary mt-3" onclick="openModal('modal-add-repo')">➕ Añadir repo</button>
+        </div>`}
+      </div>
+    </div>
+
+    <!-- Tab Config -->
+    <div class="tab-pane" id="tab-config">
+      <div class="card">
+        <div class="card-header" style="justify-content:space-between">
+          <div class="card-title">📄 Archivos de configuración</div>
+          <button class="btn btn-ghost btn-sm" onclick="rebuildConfig('${c.name}')">🔄 Reconstruir todo</button>
+        </div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+          ${configFiles.map(([label, exists]) => `
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+              <span style="flex:1;font-size:13px">${label}</span>
+              <span class="badge ${exists ? 'badge-success' : 'badge-danger'}">${exists ? '✓ Existe' : '✗ Falta'}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-secondary btn-sm" onclick="showPubKey('${c.name}')">🔑 Ver clave pública SSH</button>
+          <button class="btn btn-secondary btn-sm" onclick="genSSHKey('${c.name}')">🔐 Regenerar clave SSH</button>
+        </div>
+      </div>
+      <div class="card mt-3">
+        <div class="card-header"><div class="card-title">📁 Rutas</div></div>
+        <div class="card-body" style="font-size:12px;display:flex;flex-direction:column;gap:8px">
+          ${infoRow('Proyectos', '<code class="text-mono" style="font-size:11px">'+c.project_dir+'</code>')}
+          ${infoRow('VS Code workspace', '<code class="text-mono" style="font-size:11px">'+c.workspace_file+'</code>')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Anypoint -->
+    <div class="tab-pane" id="tab-anypoint">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🔐 Credenciales Anypoint Platform</div></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Usuario Anypoint</label>
+            <input type="text" id="ap-user-${c.name}" value="${c.anypoint_username || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password Anypoint</label>
+            <input type="password" id="ap-pass-${c.name}" placeholder="Nueva contraseña">
+          </div>
+          <div style="background:var(--warning-soft);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--text-2)">
+            ⚠️ Las credenciales se guardan en <code>settings.xml</code> local. No las subas a Git.
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-primary" onclick="saveAnypoint('${c.name}')">💾 Guardar credenciales</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Inicializar tabs
+  document.querySelectorAll(`#tabs-${c.name}.tabs`).forEach(initTabs);
+}
+
+function infoRow(label, value) {
+  return `<div style="display:flex;gap:8px">
+    <span style="color:var(--text-2);min-width:90px;flex-shrink:0">${label}</span>
+    <span>${value}</span>
+  </div>`;
+}
+
+/* ── Operaciones de cliente ─────────────────────────────────────────────── */
+async function syncClient(name, full=false) {
+  const t = toast('Sincronizando repositorios…', 'info', 0);
+  const r = await POST(`/api/clients/${name}/sync`, { full });
+  t.remove();
+  if (r.ok) {
+    const ok = Object.values(r.results||{}).filter(x=>x.ok).length;
+    toast(`Sync completado: ${ok}/${Object.keys(r.results||{}).length} repos`, 'success');
+    if (currentClient === name) loadClientDetail(name);
+  } else toast(r.error || 'Error en sync', 'error');
+}
+
+async function openVSCode(name) {
+  const r = await POST(`/api/clients/${name}/open`, {});
+  if (!r.ok) toast(r.error || 'VS Code no disponible', 'warning');
+  else toast('Abriendo VS Code…', 'success');
+}
+
+async function deleteClient(name, displayName) {
+  confirm2(`¿Eliminar el cliente "${displayName}"? Esta acción no se puede deshacer.`, async () => {
+    const r = await fetch(`/api/clients/${name}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.ok) {
+      toast(`Cliente "${displayName}" eliminado`, 'success');
+      setTimeout(() => location.reload(), 800);
+    } else toast(d.error || 'Error eliminando', 'error');
+  });
+}
+
+async function removeRepo(clientName, repoName) {
+  confirm2(`¿Eliminar el repositorio "${repoName}" de la configuración?`, async () => {
+    const r = await PUT(`/api/clients/${clientName}`, { action:'remove_repo', repo_name:repoName });
+    if (r.ok) { toast(`Repo "${repoName}" eliminado`, 'success'); loadClientDetail(clientName); }
+    else toast(r.error || 'Error', 'error');
+  });
+}
+
+async function rebuildConfig(name) {
+  const t = toast('Reconstruyendo configuración…', 'info', 0);
+  const r = await PUT(`/api/clients/${name}`, { action:'rebuild' });
+  t.remove();
+  if (r.ok) { toast('Configuración reconstruida', 'success'); loadClientDetail(name); }
+  else toast(r.error || 'Error', 'error');
+}
+
+async function showPubKey(name) {
+  const r = await GET(`/api/ssh/${name}/public-key`);
+  if (!r.ok) { toast(r.error || 'Clave no encontrada', 'warning'); return; }
+  document.getElementById('pubkey-text').textContent = r.pub_key;
+  document.getElementById('pubkey-instructions').textContent = '💡 ' + r.instructions;
+  openModal('modal-pubkey');
+}
+
+async function genSSHKey(name) {
+  confirm2('¿Regenerar la clave SSH? La clave anterior quedará inválida.', async () => {
+    const t = toast('Generando clave SSH…', 'info', 0);
+    const r = await POST(`/api/ssh/${name}/generate`, { force: true });
+    t.remove();
+    if (r.ok) {
+      toast('Clave SSH regenerada', 'success');
+      document.getElementById('pubkey-text').textContent = r.pub_key;
+      document.getElementById('pubkey-instructions').textContent = '💡 Registra esta nueva clave en tu proveedor VCS.';
+      openModal('modal-pubkey');
+      loadClientDetail(name);
+    } else toast(r.error || 'Error', 'error');
+  });
+}
+
+async function saveAnypoint(name) {
+  const user = document.getElementById(`ap-user-${name}`).value.trim();
+  const pass = document.getElementById(`ap-pass-${name}`).value;
+  if (!user || !pass) return toast('Rellena usuario y contraseña', 'warning');
+  const r = await PUT(`/api/clients/${name}`, { action:'update_anypoint', username:user, password:pass });
+  if (r.ok) toast('Credenciales Anypoint guardadas', 'success');
+  else toast(r.error || 'Error', 'error');
+}
+
+function showEditVcs(name) { toast('Usa mulesoft-manager client update ' + name + ' --interactive para editar el VCS', 'info'); }
+function showEditRegion(name, current) { toast('Usa mulesoft-manager client update ' + name + ' --region eu|us para cambiar la región', 'info'); }
+function showEditAnypoint(name) {
+  const pane = document.getElementById('tab-anypoint');
+  if (pane) { document.querySelectorAll('.tab-btn').forEach((b,i) => { if(b.dataset.tab==='tab-anypoint') b.click(); }); }
+}
+
+/* ── Añadir repositorio ─────────────────────────────────────────────────── */
+async function addRepo() {
+  const name = document.getElementById('repo-name').value.trim();
+  if (!name) return toast('El nombre del repositorio es obligatorio', 'warning');
+  const repo = {
+    name, branch: document.getElementById('repo-branch').value || 'main',
+    url: document.getElementById('repo-url').value.trim(),
+    description: document.getElementById('repo-desc').value.trim(),
+  };
+  if (!repo.url) delete repo.url;
+  const btn = document.getElementById('btn-add-repo');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  const r = await PUT(`/api/clients/${currentClient}`, { action:'add_repo', repo });
+  btn.disabled = false; btn.innerHTML = 'Añadir';
+  if (r.ok) {
+    toast(`Repo "${name}" añadido`, 'success');
+    closeModal('modal-add-repo');
+    loadClientDetail(currentClient);
+  } else toast(r.error || 'Error', 'error');
+}
+
+/* ── Auto-derivación de nombres ──────────────────────────────────────────── */
+/**
+ * Deriva sugerencias de campos a partir del nombre interno del cliente.
+ * Lógica idéntica a derive_client_names() en config.py.
+ * Ejemplo: "banco_sabadell_es" →
+ *   display  = "Banco Sabadell Es"
+ *   org      = "banco-sabadell-es"
+ *   username = "banco-sabadell-es"
+ */
+function deriveClientNames(raw) {
+  // Normalizar: mayúsculas → minúsculas, espacios y guiones → guiones_bajos
+  const normalized = raw.trim().toLowerCase()
+    .replace(/[\s\-]+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .replace(/^_+|_+$/g, '');
+
+  if (!normalized) return null;
+  const segments = normalized.split('_').filter(Boolean);
+
+  const display  = segments.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+  const org      = segments.join('-');
+  const username = org;
+  const gitName  = display;
+  const short    = segments[0] || normalized;
+
+  return { name: normalized, display, org, username, gitName, short };
+}
+
+/** Marca un campo como rellenado automáticamente y muestra badge "sugerido" */
+function markAuto(el, value) {
+  el.value = value;
+  el.dataset.auto = '1';
+  el.style.borderColor = 'var(--accent)';
+  // Mostrar badge de "sugerido" si existe
+  const badge = document.getElementById(el.id + '-auto-badge');
+  if (badge) badge.style.display = '';
+}
+/** Limpia la marca de autocompletado cuando el usuario edita a mano */
+function clearAuto(el) {
+  el.dataset.auto = '0';
+  el.style.borderColor = '';
+  const badge = document.getElementById(el.id + '-auto-badge');
+  if (badge) badge.style.display = 'none';
+}
+
+function initClientAutofill() {
+  const nameEl    = document.getElementById('nc-name');
+  const displayEl = document.getElementById('nc-display');
+  const orgEl     = document.getElementById('nc-org');
+  const userEl    = document.getElementById('nc-username');
+
+  if (!nameEl) return;
+
+  // Cuando el usuario edita manualmente un campo, quitar la marca auto
+  [displayEl, orgEl, userEl].forEach(el => {
+    if (!el) return;
+    el.addEventListener('input', () => clearAuto(el));
+  });
+
+  // Disparador principal: campo de nombre interno
+  nameEl.addEventListener('input', () => {
+    const d = deriveClientNames(nameEl.value);
+    if (!d) {
+      // Si borran el nombre, limpiar solo los campos que eran auto
+      [displayEl, orgEl, userEl].forEach(el => {
+        if (el && el.dataset.auto === '1') { el.value = ''; clearAuto(el); }
+      });
+      return;
+    }
+
+    // Actualizar solo si el campo está vacío o fue autocompletado anteriormente
+    if (displayEl && (!displayEl.value.trim() || displayEl.dataset.auto === '1')) {
+      markAuto(displayEl, d.display);
+    }
+    if (orgEl && (!orgEl.value.trim() || orgEl.dataset.auto === '1')) {
+      markAuto(orgEl, d.org);
+    }
+    if (userEl && (!userEl.value.trim() || userEl.dataset.auto === '1')) {
+      markAuto(userEl, d.username);
+    }
+
+    // Normalizar el campo nombre solo si el usuario no está escribiendo un separador
+    if (!/[\s\-]$/.test(nameEl.value)) {
+      const cursor = nameEl.selectionStart;
+      nameEl.value = d.name;
+      try { nameEl.setSelectionRange(cursor, cursor); } catch(e) {}
+    }
+  });
+}
+initClientAutofill();
+
+/* ── Añadir cliente ─────────────────────────────────────────────────────── */
+function onVcsChange() {
+  const sel = document.getElementById('nc-vcs');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('nc-host').value = opt.dataset.host || '';
+  document.getElementById('codecommit-extra').style.display = sel.value === 'codecommit' ? '' : 'none';
+}
+onVcsChange();
+
+async function addClient() {
+  const vcsType  = document.getElementById('nc-vcs').value;
+  const regionEl = document.querySelector('input[name="nc-region"]:checked');
+  const username = document.getElementById('nc-username').value.trim();
+
+  const data = {
+    name:         document.getElementById('nc-name').value.trim().toLowerCase().replace(/\s+/g,'_'),
+    display_name: document.getElementById('nc-display').value.trim(),
+    mule_region:  regionEl ? regionEl.value : 'us',
+    vcs: {
+      type:         vcsType,
+      host:         document.getElementById('nc-host').value.trim(),
+      username:     username,
+      git_name:     username,
+      email:        document.getElementById('nc-email').value.trim(),
+      organization: document.getElementById('nc-org').value.trim(),
+    },
+    repositories: [], generate_key: true, clone_repos: false,
+  };
+  if (vcsType === 'codecommit') {
+    data.vcs.aws_region       = document.getElementById('nc-aws-region').value.trim();
+    data.vcs.codecommit_user_id = document.getElementById('nc-cc-user').value.trim();
+  }
+  const apUser = document.getElementById('nc-ap-user').value.trim();
+  const apPass = document.getElementById('nc-ap-pass').value;
+  if (apUser && apPass) data.anypoint = { username: apUser, password: apPass };
+
+  if (!data.name || !data.vcs.username || !data.vcs.email) {
+    return toast('Rellena los campos obligatorios (*)', 'warning');
+  }
+  const btn = document.getElementById('btn-add-client');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Creando…';
+  const r = await POST('/api/clients', data);
+  if (r.ok) {
+    toast('¡Cliente ' + r.client.display_name + ' creado!', 'success');
+    closeModal('modal-add-client');
+    setTimeout(() => { location.href = '/clients?selected=' + r.client.name; }, 800);
+  } else {
+    toast(r.error || (r.errors||[]).join(', ') || 'Error', 'error');
+    btn.disabled = false; btn.innerHTML = '➕ Crear cliente';
+  }
+}
+
+/* ── Cargar cliente seleccionado al inicio ──────────────────────────────── */
+{% if selected %}
+selectClient('{{ selected }}');
+{% endif %}
+</script>
+{% endblock %}

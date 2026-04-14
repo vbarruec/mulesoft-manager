@@ -1,0 +1,115 @@
+# =============================================================================
+# Plantilla de configuración de cliente MuleSoft
+# Uso: mulesoft-manager client add --from-file mi_cliente.yaml
+# =============================================================================
+
+# Identificación del cliente
+name: "nombre_cliente"          # ID interno (sin espacios, se usará como nombre de carpeta)
+display_name: "Nombre Empresa"  # Nombre completo del cliente
+
+# Región de Anypoint Platform
+# Opciones: us | eu
+mule_region: "us"
+
+# Credenciales Anypoint Platform (para Maven y despliegues)
+# ⚠ Opcional aquí — se puede añadir después
+anypoint:
+  username: "tu_usuario@empresa.com"
+  password: "tu_password"        # ⚠ Evita subir este archivo a Git con contraseñas reales
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Control de versiones (VCS)
+# ─────────────────────────────────────────────────────────────────────────────
+vcs:
+  # Tipo: github | gitlab | bitbucket | codecommit | azure
+  type: "github"
+
+  # Host del servidor (puede ser una instancia enterprise/self-hosted)
+  # GitHub.com:     github.com
+  # GitLab.com:     gitlab.com
+  # GitLab self:    git.miempresa.com
+  # Bitbucket:      bitbucket.org
+  # Azure DevOps:   ssh.dev.azure.com
+  # CodeCommit:     git-codecommit.<region>.amazonaws.com
+  host: "github.com"
+
+  # Datos del desarrollador para los commits
+  username: "mi_usuario_github"
+  git_name: "Mi Nombre Completo"
+  email: "mi_email@empresa.com"
+
+  # Organización / namespace / workspace en el VCS
+  organization: "mi_organizacion"
+
+  # Nombre base del archivo de clave SSH (sin extensión)
+  # Se generarán: .ssh/<ssh_key_name> y .ssh/<ssh_key_name>.pub
+  # Si se omite, se usará: <name>_<vcs_type>
+  # ssh_key_name: "nombre_cliente_github"
+
+  # ── Solo para AWS CodeCommit ──────────────────────────────────────────────
+  # aws_region: "eu-west-1"
+  # codecommit_user_id: "APKA..."   # SSH User ID de IAM
+
+  # ── Solo para Azure DevOps ────────────────────────────────────────────────
+  # azure_project: "MiProyecto"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Repositorios de código
+# ─────────────────────────────────────────────────────────────────────────────
+repositories:
+  - name: "api-clientes"              # Nombre de la carpeta local
+    url: "git@github.com:mi_org/api-clientes.git"  # URL SSH (opcional si se deja vacía se construye del alias)
+    branch: "main"                    # Rama a clonar/seguir
+    description: "API de gestión de clientes"
+
+  - name: "api-pedidos"
+    url: "git@github.com:mi_org/api-pedidos.git"
+    branch: "develop"
+    description: "API de pedidos"
+
+  - name: "common-utils"
+    # url vacía → se construye automáticamente usando el SSH alias
+    branch: "main"
+    description: "Utilidades compartidas"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Ejemplos de configuración para otros VCS
+# ─────────────────────────────────────────────────────────────────────────────
+
+# GitLab (self-hosted):
+# vcs:
+#   type: gitlab
+#   host: git.miempresa.com
+#   username: mi_usuario
+#   git_name: Mi Nombre
+#   email: usuario@empresa.com
+#   organization: grupo/subgrupo
+
+# AWS CodeCommit:
+# vcs:
+#   type: codecommit
+#   host: git-codecommit.eu-west-1.amazonaws.com
+#   aws_region: eu-west-1
+#   username: mi_usuario_iam
+#   git_name: Mi Nombre
+#   email: usuario@empresa.com
+#   codecommit_user_id: APKA1234567890ABCDEF
+
+# Bitbucket:
+# vcs:
+#   type: bitbucket
+#   host: bitbucket.org
+#   username: mi_usuario
+#   git_name: Mi Nombre
+#   email: usuario@empresa.com
+#   organization: mi_workspace
+
+# Azure DevOps:
+# vcs:
+#   type: azure
+#   host: ssh.dev.azure.com
+#   username: mi_usuario@empresa.com
+#   git_name: Mi Nombre
+#   email: mi_usuario@empresa.com
+#   organization: mi_organizacion
+#   azure_project: MiProyecto
