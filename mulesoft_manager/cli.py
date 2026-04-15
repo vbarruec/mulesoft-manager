@@ -38,6 +38,7 @@ from .config import (
     derive_client_names,
 )
 from .constants import VCS_TYPES, MULE_REGIONS, VSCODE_EXTENSIONS
+from .i18n import t, set_lang, get_lang
 from .workspace import (
     create_workspace_structure,
     print_workspace_tree,
@@ -88,8 +89,8 @@ def _get_workspace() -> tuple[Path, GlobalConfig]:
     """Obtiene el workspace root y config, saliendo con error si no existe."""
     root = find_workspace_root()
     if root is None:
-        console.print("[red]❌ Workspace no inicializado.[/red]")
-        console.print("[yellow]Ejecuta primero: [bold]mulesoft-manager init[/bold][/yellow]")
+        console.print(t("cmd.no_workspace"))
+        console.print(t("cmd.run_init"))
         sys.exit(1)
     return root, GlobalConfig(root)
 
@@ -98,8 +99,8 @@ def _get_client(root: Path, name: str) -> ClientConfig:
     """Carga un cliente, saliendo con error si no existe."""
     c = ClientConfig(root, name)
     if not c.exists():
-        console.print(f"[red]❌ Cliente no encontrado: '{name}'[/red]")
-        console.print("[yellow]Usa [bold]mulesoft-manager client list[/bold] para ver los clientes disponibles.[/yellow]")
+        console.print(t("cmd.client_not_found", name=name))
+        console.print(t("cmd.use_list"))
         sys.exit(1)
     return c
 
@@ -111,7 +112,7 @@ def _prompt_repository(
 ) -> Optional[dict]:
     """Solicita interactivamente los datos de un repositorio."""
     console.print("\n[dim]── Datos del repositorio ──[/dim]")
-    name = Prompt.ask("  Nombre del repositorio")
+    name = Prompt.ask(t("wizard.repo_name"))
     if not name:
         return None
 
@@ -146,9 +147,9 @@ def _interactive_client_wizard(root: Path) -> Optional[ClientConfig]:
     data: dict = {}
 
     # ── Identificación ──────────────────────────────────────────────────────
-    console.print("\n[bold]── Identificación ──[/bold]")
-    console.print("[dim]El nombre interno se usa como ID de carpeta y clave SSH.[/dim]")
-    raw_name = Prompt.ask("Nombre interno del cliente (ej: acme_corp, banco_sabadell)")
+    console.print(f"\n[bold]{t('wizard.section_id')}[/bold]")
+    console.print(f"[dim]{t('wizard.name_desc')}[/dim]")
+    raw_name = Prompt.ask(t("wizard.name_prompt"))
 
     # Derivar sugerencias automáticamente
     derived = derive_client_names(raw_name)
@@ -156,59 +157,50 @@ def _interactive_client_wizard(root: Path) -> Optional[ClientConfig]:
 
     # Mostrar las sugerencias derivadas
     console.print(
-        f"  [dim]Sugerencias derivadas de [bold]{derived['name']}[/bold]:[/dim]\n"
-        f"    nombre completo → [cyan]{derived['display_name']}[/cyan]\n"
-        f"    organización    → [cyan]{derived['organization']}[/cyan]\n"
-        f"    usuario git     → [cyan]{derived['username']}[/cyan]"
+        f"  [dim]{t('wizard.derived_header', name=derived['name'])}[/dim]\n"
+        f"    {t('wizard.derived_display', display_name=derived['display_name'])}\n"
+        f"    {t('wizard.derived_org',     organization=derived['organization'])}\n"
+        f"    {t('wizard.derived_user',    username=derived['username'])}"
     )
 
     data["display_name"] = Prompt.ask(
-        "Nombre completo / empresa",
+        t("wizard.display_prompt"),
         default=derived["display_name"],
     )
 
     # ── Anypoint Platform ───────────────────────────────────────────────────
-    console.print("\n[bold]── Anypoint Platform ──[/bold]")
+    console.print(f"\n[bold]{t('wizard.section_ap')}[/bold]")
+    console.print(t("wizard.regions_avail"))
     for k, v in MULE_REGIONS.items():
         console.print(f"  [cyan]{k}[/cyan] → {v['display']}")
-    region = Prompt.ask("Región Mule", choices=list(MULE_REGIONS.keys()), default="us")
+    region = Prompt.ask(t("wizard.region_prompt"), choices=list(MULE_REGIONS.keys()), default="us")
     data["mule_region"] = region
 
-    if Confirm.ask("¿Tienes las credenciales de Anypoint Platform?", default=False):
+    if Confirm.ask(t("wizard.has_creds"), default=False):
         data["anypoint"] = {
-            "username": Prompt.ask("  Usuario Anypoint", default=derived["username"]),
-            "password": Prompt.ask("  Password Anypoint", password=True),
+            "username": Prompt.ask(t("wizard.ap_user"), default=derived["username"]),
+            "password": Prompt.ask(t("wizard.ap_pass"), password=True),
         }
 
     # ── VCS ─────────────────────────────────────────────────────────────────
-    console.print("\n[bold]── Control de versiones (VCS) ──[/bold]")
+    console.print(f"\n[bold]{t('wizard.section_vcs')}[/bold]")
+    console.print(t("wizard.vcs_types_avail"))
     for k, v in VCS_TYPES.items():
         console.print(f"  [cyan]{k}[/cyan] → {v['display']}")
-    vcs_type = Prompt.ask("Tipo de VCS", choices=list(VCS_TYPES.keys()), default="github")
+    vcs_type = Prompt.ask(t("wizard.vcs_prompt"), choices=list(VCS_TYPES.keys()), default="github")
     vcs_info = VCS_TYPES[vcs_type]
 
     default_host = vcs_info["default_host"]
     if vcs_type == "codecommit":
-        aws_region = Prompt.ask("  Región AWS (ej: eu-west-1)", default="us-east-1")
+        aws_region = Prompt.ask(t("wizard.aws_region"), default="us-east-1")
         default_host = f"git-codecommit.{aws_region}.amazonaws.com"
         data.setdefault("vcs", {})["aws_region"] = aws_region
 
-    host = Prompt.ask("Host del servidor VCS", default=default_host)
-
-    # Campos de identidad git con sugerencias derivadas del nombre del cliente
-    username = Prompt.ask(
-        "Nombre de usuario git",
-        default=derived["username"],
-    )
-    git_name = Prompt.ask(
-        "Nombre real (para commits)",
-        default=derived["git_name"],
-    )
-    email = Prompt.ask("Email git")
-    organization = Prompt.ask(
-        "Organización / namespace",
-        default=derived["organization"],
-    )
+    host     = Prompt.ask(t("wizard.vcs_host"), default=default_host)
+    username = Prompt.ask(t("wizard.vcs_user"),     default=derived["username"])
+    git_name = Prompt.ask(t("wizard.vcs_git_name"), default=derived["git_name"])
+    email    = Prompt.ask(t("wizard.vcs_email"))
+    organization = Prompt.ask(t("wizard.vcs_org"),  default=derived["organization"])
 
     data.setdefault("vcs", {}).update({
         "type": vcs_type,
@@ -220,15 +212,15 @@ def _interactive_client_wizard(root: Path) -> Optional[ClientConfig]:
     })
 
     if vcs_type == "codecommit":
-        ccu = Prompt.ask("  CodeCommit SSH User ID (IAM)", default="APKA...")
+        ccu = Prompt.ask(t("wizard.cc_user"), default="APKA...")
         data["vcs"]["codecommit_user_id"] = ccu
 
     # ── Repositorios ────────────────────────────────────────────────────────
-    console.print("\n[bold]── Repositorios ──[/bold]")
+    console.print(f"\n[bold]{t('wizard.section_repos')}[/bold]")
     repos = []
     alias_hint = f"{vcs_info['ssh_host_alias_prefix']}-{data['name']}"
 
-    if Confirm.ask("¿Añadir repositorios ahora?", default=True):
+    if Confirm.ask(t("wizard.add_repos"), default=True):
         while True:
             repo = _prompt_repository(
                 organization=organization,
@@ -237,7 +229,7 @@ def _interactive_client_wizard(root: Path) -> Optional[ClientConfig]:
             )
             if repo:
                 repos.append(repo)
-            if not Confirm.ask("¿Añadir otro repositorio?", default=False):
+            if not Confirm.ask(t("wizard.add_another"), default=False):
                 break
 
     data["repositories"] = repos
@@ -246,18 +238,18 @@ def _interactive_client_wizard(root: Path) -> Optional[ClientConfig]:
     console.print(
         Panel(
             f"[bold]Resumen:[/bold]\n"
-            f"  Nombre:    [cyan]{data['display_name']}[/cyan] ([dim]{data['name']}[/dim])\n"
-            f"  VCS:       [yellow]{vcs_info['display']}[/yellow] ({host})\n"
-            f"  Usuario:   {username} <{email}>\n"
-            f"  Región:    [yellow]{MULE_REGIONS[region]['display']}[/yellow]\n"
-            f"  Repos:     {len(repos)}",
+            f"{t('wizard.confirm_name',   display=data['display_name'], name=data['name'])}\n"
+            f"{t('wizard.confirm_vcs',    vcs=vcs_info['display'], host=host)}\n"
+            f"{t('wizard.confirm_user',   user=username, email=email)}\n"
+            f"{t('wizard.confirm_region', region=MULE_REGIONS[region]['display'])}\n"
+            f"{t('wizard.confirm_repos',  n=len(repos))}",
             border_style="green",
-            title="Nuevo cliente",
+            title=t("wizard.confirm_title"),
         )
     )
 
-    if not Confirm.ask("¿Confirmar creación del cliente?"):
-        console.print("[dim]Operación cancelada.[/dim]")
+    if not Confirm.ask(t("wizard.confirm_prompt")):
+        console.print(t("wizard.cancelled"))
         return None
 
     return ClientConfig.from_dict(root, data)
@@ -277,20 +269,20 @@ def _interactive_update(root: Path, client: ClientConfig, cfg: GlobalConfig) -> 
             )
         )
         options = [
-            ("1", "Cambiar herramienta VCS (GitHub → GitLab, etc.)"),
-            ("2", "Cambiar usuario / email git"),
-            ("3", "Cambiar región Mule (us / eu)"),
-            ("4", "Actualizar credenciales Anypoint Platform"),
-            ("5", "Regenerar clave SSH"),
-            ("6", "Añadir repositorio"),
-            ("7", "Eliminar repositorio"),
-            ("8", "Reconstruir todos los archivos de configuración"),
-            ("0", "Salir"),
+            ("1", t("update.opt1")),
+            ("2", t("update.opt2")),
+            ("3", t("update.opt3")),
+            ("4", t("update.opt4")),
+            ("5", t("update.opt5")),
+            ("6", t("update.opt6")),
+            ("7", t("update.opt7")),
+            ("8", t("update.opt8")),
+            ("0", t("update.opt0")),
         ]
         for key, label in options:
             console.print(f"  [cyan]{key}[/cyan]  {label}")
 
-        choice = Prompt.ask("\nOpción", choices=[k for k, _ in options])
+        choice = Prompt.ask(t("update.option"), choices=[k for k, _ in options])
 
         if choice == "0":
             break
@@ -298,21 +290,21 @@ def _interactive_update(root: Path, client: ClientConfig, cfg: GlobalConfig) -> 
         elif choice == "1":
             for k, v in VCS_TYPES.items():
                 console.print(f"  [cyan]{k}[/cyan] → {v['display']}")
-            new_vcs = Prompt.ask("Nuevo tipo VCS", choices=list(VCS_TYPES.keys()))
-            new_host = Prompt.ask("Nuevo host", default=VCS_TYPES[new_vcs]["default_host"])
+            new_vcs  = Prompt.ask(t("update.new_vcs"),  choices=list(VCS_TYPES.keys()))
+            new_host = Prompt.ask(t("update.new_host"), default=VCS_TYPES[new_vcs]["default_host"])
             update_client_vcs(root, client, cfg, new_vcs_type=new_vcs, new_vcs_host=new_host, regenerate_key=True)
 
         elif choice == "2":
-            new_user = Prompt.ask("Nuevo usuario", default=client.vcs_username)
-            new_name = Prompt.ask("Nombre real (commits)", default=client.get("vcs", "git_name", default=client.vcs_username))
-            new_email = Prompt.ask("Nuevo email", default=client.vcs_email)
+            new_user  = Prompt.ask(t("update.new_user"),  default=client.vcs_username)
+            new_name  = Prompt.ask(t("update.new_name"),  default=client.get("vcs", "git_name", default=client.vcs_username))
+            new_email = Prompt.ask(t("update.new_email"), default=client.vcs_email)
             client.set(new_name, "vcs", "git_name")
             update_client_vcs(root, client, cfg, new_username=new_user, new_email=new_email)
 
         elif choice == "3":
             for k, v in MULE_REGIONS.items():
                 console.print(f"  [cyan]{k}[/cyan] → {v['display']}")
-            new_region = Prompt.ask("Nueva región", choices=list(MULE_REGIONS.keys()))
+            new_region = Prompt.ask(t("update.new_region"), choices=list(MULE_REGIONS.keys()))
             update_client_region(root, client, cfg, new_region)
 
         elif choice == "4":
@@ -362,14 +354,19 @@ def _interactive_update(root: Path, client: ClientConfig, cfg: GlobalConfig) -> 
 
 @click.group()
 @click.version_option(version="1.0.0", prog_name="mulesoft-manager")
-def cli():
+@click.option("--lang", default=None, type=click.Choice(["es", "en"]),
+              help="Idioma de la interfaz / Interface language (es | en)")
+def cli(lang: Optional[str]):
     """
     🔧 MuleSoft Manager — Gestión normalizada de entornos MuleSoft.
 
     Automatiza la configuración de workspace, SSH, Git y VS Code
     para múltiples clientes en una consultora.
+
+    Usa --lang en para cambiar el idioma a inglés.
     """
-    pass
+    if lang:
+        set_lang(lang)
 
 
 # ===========================================================================

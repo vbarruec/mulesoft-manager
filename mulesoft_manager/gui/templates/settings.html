@@ -2,11 +2,11 @@
 {% set active = "settings" %}
 
 {% block title %}Ajustes — MuleSoft Manager{% endblock %}
-{% block page_title %}Ajustes globales{% endblock %}
+{% block page_title %}<span data-i18n="settings.title">Ajustes globales</span>{% endblock %}
 
 {% block topbar_actions %}
-  <button class="btn btn-primary" onclick="saveAll()">💾 Guardar cambios</button>
-  <button class="btn btn-secondary" onclick="location.reload()">↺ Descartar</button>
+  <button class="btn btn-primary" onclick="saveAll()" data-i18n="settings.save_btn">💾 Guardar cambios</button>
+  <button class="btn btn-secondary" onclick="location.reload()" data-i18n="settings.discard_btn">↺ Descartar</button>
 {% endblock %}
 
 {% block content %}
@@ -15,20 +15,21 @@
   <!-- ── Navegación lateral de ajustes ─────────────────────────────────────── -->
   <div class="card" style="position:sticky;top:0">
     <div style="padding:8px">
-      {% for sec_id, sec_label, sec_icon in [
-        ('sec-workspace','Workspace','📁'),
-        ('sec-java','Java JDK','☕'),
-        ('sec-maven','Apache Maven','🏗️'),
-        ('sec-vscode','VS Code','🖥️'),
-        ('sec-ssh','SSH','🔐'),
-        ('sec-git','Git','🌿'),
+      {% for sec_id, sec_label, sec_icon, sec_i18n in [
+        ('sec-workspace','Workspace','📁','settings.workspace'),
+        ('sec-java','Java JDK','☕','settings.java'),
+        ('sec-maven','Apache Maven','🏗️','settings.maven'),
+        ('sec-vscode','VS Code','🖥️','settings.vscode'),
+        ('sec-ssh','SSH','🔐','settings.ssh_sec'),
+        ('sec-git','Git','🌿','settings.git_sec'),
       ] %}
       <a href="#{{ sec_id }}"
          style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);
                 color:var(--text-2);font-size:13px;text-decoration:none;transition:all var(--transition)"
          onmouseover="this.style.background='var(--bg-card-h)';this.style.color='var(--text-1)'"
          onmouseout="this.style.background='';this.style.color='var(--text-2)'">
-        <span>{{ sec_icon }}</span> {{ sec_label }}
+        <span>{{ sec_icon }}</span>
+        <span data-i18n="{{ sec_i18n }}">{{ sec_label }}</span>
       </a>
       {% endfor %}
     </div>
@@ -42,15 +43,15 @@
       <div class="card-header">
         <span style="font-size:18px">📁</span>
         <div>
-          <div class="card-title">Workspace</div>
-          <div class="card-sub">Información del workspace activo</div>
+          <div class="card-title" data-i18n="settings.workspace">Workspace</div>
+          <div class="card-sub" data-i18n="settings.ws_sub">Información del workspace activo</div>
         </div>
       </div>
       <div class="card-body">
         <div class="form-group">
           <label class="form-label">Ruta raíz del workspace</label>
           <input type="text" value="{{ root }}" readonly style="opacity:0.6;cursor:not-allowed">
-          <div class="form-hint">Para cambiar la ruta, ejecuta <code class="text-mono">mulesoft-manager init --path NUEVA_RUTA</code></div>
+          <div class="form-hint"><span data-i18n="settings.ws_hint">Para cambiar la ruta, ejecuta <code class="text-mono">mulesoft-manager init --path NUEVA_RUTA</code></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="copyText('{{ root }}','Ruta')">📋 Copiar ruta</button>
@@ -64,15 +65,15 @@
       <div class="card-header">
         <span style="font-size:18px">☕</span>
         <div>
-          <div class="card-title">Java JDK</div>
-          <div class="card-sub">Configuración del Java Development Kit</div>
+          <div class="card-title" data-i18n="settings.java">Java JDK</div>
+          <div class="card-sub" data-i18n="settings.java_sub">Configuración del Java Development Kit</div>
         </div>
         <div class="ml-auto" id="java-status-badge"><span class="spinner" style="width:14px;height:14px"></span></div>
       </div>
       <div class="card-body">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Versión preferida</label>
+            <label class="form-label" data-i18n="settings.ver_pref">Versión preferida</label>
             <select id="java-version" onchange="markDirty()">
               {% for v in ['17','21','11'] %}
               <option value="{{ v }}" {% if cfg.java and cfg.java.version == v %}selected{% endif %}>Java {{ v }}</option>
@@ -80,7 +81,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Método de instalación</label>
+            <label class="form-label" data-i18n="settings.install_meth">Método de instalación</label>
             <select id="java-method" onchange="markDirty()">
               <option value="winget" {% if cfg.java and cfg.java.install_method == 'winget' %}selected{% endif %}>winget (recomendado)</option>
               <option value="manual" {% if cfg.java and cfg.java.install_method == 'manual' %}selected{% endif %}>Descarga manual</option>
@@ -101,8 +102,8 @@
       <div class="card-header">
         <span style="font-size:18px">🏗️</span>
         <div>
-          <div class="card-title">Apache Maven</div>
-          <div class="card-sub">Gestión de dependencias y build</div>
+          <div class="card-title" data-i18n="settings.maven">Apache Maven</div>
+          <div class="card-sub" data-i18n="settings.maven_sub">Gestión de dependencias y build</div>
         </div>
         <div class="ml-auto" id="maven-status-badge"><span class="spinner" style="width:14px;height:14px"></span></div>
       </div>
@@ -138,8 +139,8 @@
       <div class="card-header">
         <span style="font-size:18px">🖥️</span>
         <div>
-          <div class="card-title">Visual Studio Code</div>
-          <div class="card-sub">Extensiones y configuración del IDE</div>
+          <div class="card-title" data-i18n="settings.vscode">Visual Studio Code</div>
+          <div class="card-sub" data-i18n="settings.vscode_sub">Extensiones y configuración del IDE</div>
         </div>
       </div>
       <div class="card-body">
@@ -151,7 +152,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Extensiones recomendadas</label>
+          <label class="form-label" data-i18n="settings.extensions">Extensiones recomendadas</label>
           <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px">
             {% for ext in default_extensions %}
             <label style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:4px;
@@ -175,14 +176,14 @@
       <div class="card-header">
         <span style="font-size:18px">🔐</span>
         <div>
-          <div class="card-title">SSH</div>
-          <div class="card-sub">Generación de claves SSH</div>
+          <div class="card-title" data-i18n="settings.ssh_sec">SSH</div>
+          <div class="card-sub" data-i18n="settings.ssh_sub">Generación de claves SSH</div>
         </div>
       </div>
       <div class="card-body">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Tipo de clave predeterminado</label>
+            <label class="form-label" data-i18n="settings.key_type">Tipo de clave predeterminado</label>
             <select id="ssh-type" onchange="markDirty()">
               <option value="ed25519" {% if cfg.ssh and cfg.ssh.key_type == 'ed25519' %}selected{% endif %}>ed25519 (recomendado)</option>
               <option value="rsa" {% if cfg.ssh and cfg.ssh.key_type == 'rsa' %}selected{% endif %}>RSA</option>
@@ -190,7 +191,7 @@
             <div class="form-hint">ed25519 es más seguro y compacto</div>
           </div>
           <div class="form-group">
-            <label class="form-label">Bits RSA (solo RSA)</label>
+            <label class="form-label" data-i18n="settings.rsa_bits">Bits RSA (solo RSA)</label>
             <select id="ssh-bits" onchange="markDirty()">
               {% for bits in [4096, 3072, 2048] %}
               <option value="{{ bits }}" {% if cfg.ssh and cfg.ssh.key_bits == bits %}selected{% endif %}>{{ bits }} bits</option>
@@ -206,19 +207,19 @@
       <div class="card-header">
         <span style="font-size:18px">🌿</span>
         <div>
-          <div class="card-title">Git</div>
-          <div class="card-sub">Configuración global de Git</div>
+          <div class="card-title" data-i18n="settings.git_sec">Git</div>
+          <div class="card-sub" data-i18n="settings.git_sub">Configuración global de Git</div>
         </div>
       </div>
       <div class="card-body">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Rama por defecto</label>
+            <label class="form-label" data-i18n="settings.default_branch">Rama por defecto</label>
             <input type="text" id="git-branch" value="{{ cfg.git.default_branch if cfg.git else 'main' }}"
                    placeholder="main" oninput="markDirty()">
           </div>
           <div class="form-group">
-            <label class="form-label">autocrlf</label>
+            <label class="form-label" data-i18n="settings.autocrlf">autocrlf</label>
             <select id="git-autocrlf" onchange="markDirty()">
               {% for v in ['false','true','input'] %}
               <option value="{{ v }}" {% if (cfg.git and cfg.git.autocrlf == v) or (not cfg.git and v=='false') %}selected{% endif %}>{{ v }}</option>
@@ -232,8 +233,8 @@
 
     <!-- Botones de guardado -->
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-bottom:8px">
-      <button class="btn btn-secondary" onclick="location.reload()">↺ Descartar cambios</button>
-      <button class="btn btn-primary" id="btn-save" onclick="saveAll()">💾 Guardar todos los cambios</button>
+      <button class="btn btn-secondary" onclick="location.reload()" data-i18n="settings.discard_all">↺ Descartar cambios</button>
+      <button class="btn btn-primary" id="btn-save" onclick="saveAll()" data-i18n="settings.save_all_btn">💾 Guardar todos los cambios</button>
     </div>
 
   </div>

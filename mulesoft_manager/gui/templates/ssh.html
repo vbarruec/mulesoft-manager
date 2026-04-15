@@ -3,10 +3,10 @@
 {% set client_count = clients | length %}
 
 {% block title %}SSH / Git — MuleSoft Manager{% endblock %}
-{% block page_title %}SSH / Git{% endblock %}
+{% block page_title %}<span data-i18n="ssh.title">SSH / Git</span>{% endblock %}
 
 {% block topbar_actions %}
-  <button class="btn btn-primary" onclick="openModal('modal-gen-key')">🔐 Generar clave SSH</button>
+  <button class="btn btn-primary" onclick="openModal('modal-gen-key')" data-i18n="ssh.gen_key_btn">🔐 Generar clave SSH</button>
 {% endblock %}
 
 {% block content %}
@@ -16,7 +16,7 @@
             padding:14px 20px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start">
   <span style="font-size:20px;flex-shrink:0">ℹ️</span>
   <div style="font-size:13px;color:var(--text-2);line-height:1.6">
-    <strong style="color:var(--text-1)">Cómo funciona el aislamiento SSH/Git:</strong>
+    <strong style="color:var(--text-1)" data-i18n="ssh.info_title">Cómo funciona el aislamiento SSH/Git:</strong>
     Cada cliente tiene su propia clave SSH. El alias de host en <code class="text-mono">~/.ssh/config</code>
     enruta cada repo al par de claves correcto. El <code class="text-mono">~/.gitconfig</code> global usa
     <code class="text-mono">includeIf</code> para aplicar la identidad del cliente dentro de su carpeta de proyectos.
@@ -27,7 +27,7 @@
 <div class="card" style="margin-bottom:24px">
   <div class="card-header" style="justify-content:space-between">
     <div>
-      <div class="card-title">🔑 Claves SSH por cliente</div>
+      <div class="card-title" data-i18n="ssh.keys_title">🔑 Claves SSH por cliente</div>
       <div class="card-sub">{{ ssh_keys | length }} clave{{ 's' if ssh_keys|length != 1 else '' }} configurada{{ 's' if ssh_keys|length != 1 else '' }}</div>
     </div>
   </div>
@@ -37,13 +37,13 @@
     <table>
       <thead>
         <tr>
-          <th>Cliente</th>
-          <th>VCS</th>
-          <th>Nombre de clave</th>
-          <th>SSH Alias</th>
-          <th>Clave privada</th>
-          <th>Clave pública</th>
-          <th>Acciones</th>
+          <th data-i18n="ssh.col_client">Cliente</th>
+          <th data-i18n="ssh.col_vcs">VCS</th>
+          <th data-i18n="ssh.col_key">Nombre de clave</th>
+          <th data-i18n="ssh.col_alias">SSH Alias</th>
+          <th data-i18n="ssh.col_priv">Clave privada</th>
+          <th data-i18n="ssh.col_pub">Clave pública</th>
+          <th data-i18n="ssh.col_actions">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -58,9 +58,9 @@
           <td><code class="text-mono" style="font-size:11px">{{ key.alias }}</code></td>
           <td>
             {% if key.priv_exists %}
-              <span class="badge badge-success">✓ Existe</span>
+              <span class="badge badge-success" data-i18n="ssh.exists">✓ Existe</span>
             {% else %}
-              <span class="badge badge-danger">✗ Falta</span>
+              <span class="badge badge-danger" data-i18n="ssh.missing">✗ Falta</span>
             {% endif %}
           </td>
           <td>
@@ -83,7 +83,7 @@
   {% else %}
   <div class="empty-state" style="padding:48px">
     <div class="empty-icon">🔑</div>
-    <div class="empty-title">Sin claves SSH</div>
+    <div class="empty-title" data-i18n="ssh.no_keys">Sin claves SSH</div>
     <div class="empty-sub">Las claves SSH se generan automáticamente al añadir un cliente.
       También puedes generarlas manualmente.</div>
     <button class="btn btn-primary mt-3" onclick="openModal('modal-gen-key')">🔐 Generar clave</button>
@@ -128,7 +128,7 @@
 
 <!-- ── Guía de registro de claves ──────────────────────────────────────────── -->
 <div class="card" style="margin-top:20px">
-  <div class="card-header"><div class="card-title">📋 Dónde registrar las claves públicas</div></div>
+  <div class="card-header"><div class="card-title" data-i18n="ssh.register">📋 Dónde registrar las claves públicas</div></div>
   <div class="card-body">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
       {% for name, url, icon in [
@@ -159,7 +159,7 @@
     <div class="modal-header">
       <span style="font-size:20px">🔑</span>
       <div>
-        <div class="modal-title">Clave pública SSH</div>
+        <div class="modal-title" data-i18n="modal.pub_key">Clave pública SSH</div>
         <div class="card-sub" id="pubkey-client-label"></div>
       </div>
       <button class="modal-close" onclick="closeModal('modal-pubkey')">×</button>
@@ -183,12 +183,12 @@
   <div class="modal" style="max-width:460px">
     <div class="modal-header">
       <span style="font-size:20px">🔐</span>
-      <div class="modal-title">Generar clave SSH</div>
+      <div class="modal-title" data-i18n="modal.gen_key">Generar clave SSH</div>
       <button class="modal-close" onclick="closeModal('modal-gen-key')">×</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">Cliente *</label>
+        <label class="form-label" data-i18n="ssh.client_label">Cliente *</label>
         <select id="gen-client">
           {% for c in clients %}
           <option value="{{ c.name }}">{{ c.display_name }}</option>
@@ -196,7 +196,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Algoritmo</label>
+        <label class="form-label" data-i18n="ssh.algo_label">Algoritmo</label>
         <select id="gen-type">
           <option value="ed25519">ed25519 (recomendado)</option>
           <option value="rsa">RSA 4096</option>
@@ -209,7 +209,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-gen-key')">Cancelar</button>
-      <button class="btn btn-primary" id="btn-gen" onclick="generateKey()">🔐 Generar</button>
+      <button class="btn btn-primary" id="btn-gen" onclick="generateKey()" data-i18n="modal.gen_key_btn">🔐 Generar</button>
     </div>
   </div>
 </div>
@@ -236,7 +236,7 @@ async function regenKey(name, displayName) {
     const r = await POST(`/api/ssh/${name}/generate`, { force: true });
     t.remove();
     if (r.ok) {
-      toast('Clave regenerada', 'success');
+      toast(getLang()==='en'?'Key regenerated':'Clave regenerada', 'success');
       document.getElementById('pubkey-client-label').textContent = name;
       document.getElementById('pubkey-text').textContent = r.pub_key;
       document.getElementById('pubkey-instructions').textContent = '⚠️ Registra esta nueva clave en tu proveedor VCS antes de hacer git pull/push.';
@@ -255,7 +255,7 @@ async function generateKey() {
   const r = await POST(`/api/ssh/${name}/generate`, { force, key_type: keyType });
   btn.disabled = false; btn.innerHTML = '🔐 Generar';
   if (r.ok) {
-    toast('Clave SSH generada correctamente', 'success');
+    toast(getLang()==='en'?'SSH key generated':'Clave SSH generada correctamente', 'success');
     closeModal('modal-gen-key');
     document.getElementById('pubkey-client-label').textContent = name;
     document.getElementById('pubkey-text').textContent = r.pub_key;

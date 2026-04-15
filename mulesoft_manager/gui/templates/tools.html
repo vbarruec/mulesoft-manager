@@ -2,11 +2,11 @@
 {% set active = "tools" %}
 
 {% block title %}Herramientas — MuleSoft Manager{% endblock %}
-{% block page_title %}Herramientas{% endblock %}
+{% block page_title %}<span data-i18n="tools.title">Herramientas</span>{% endblock %}
 
 {% block topbar_actions %}
-  <button class="btn btn-primary" id="btn-install-all" onclick="installAll()">⬇️ Instalar todo</button>
-  <button class="btn btn-secondary" onclick="checkAll()">🔄 Verificar</button>
+  <button class="btn btn-primary" id="btn-install-all" onclick="installAll()" data-i18n="tools.install_all">⬇️ Instalar todo</button>
+  <button class="btn btn-secondary" onclick="checkAll()" data-i18n="tools.check_btn">🔄 Verificar</button>
 {% endblock %}
 
 {% block content %}
@@ -21,13 +21,14 @@
 <!-- Log panel -->
 <div class="card">
   <div class="card-header" style="justify-content:space-between">
-    <div class="card-title">📋 Log de instalación</div>
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('log-content').textContent=''">Limpiar</button>
+    <div class="card-title" data-i18n="tools.log_title">📋 Log de instalación</div>
+    <button class="btn btn-ghost btn-sm" data-i18n="tools.log_clear"
+            onclick="document.getElementById('log-content').textContent=''">Limpiar</button>
   </div>
   <div style="background:var(--bg-base);padding:16px;border-radius:0 0 var(--radius) var(--radius);
               font-family:var(--font-mono);font-size:12px;min-height:120px;max-height:280px;overflow-y:auto"
        id="log-content">
-    <span style="color:var(--text-3)">Los mensajes de instalación aparecerán aquí…</span>
+    <span style="color:var(--text-3)"><span data-i18n="tools.log_hint">Los mensajes de instalación aparecerán aquí…</span></span>
   </div>
 </div>
 
@@ -36,14 +37,14 @@
   <div class="modal" style="max-width:500px">
     <div class="modal-header">
       <span style="font-size:20px">☕</span>
-      <div class="modal-title">Configurar ruta de Java</div>
+      <div class="modal-title" data-i18n="tools.java_path">Configurar ruta de Java</div>
       <button class="modal-close" onclick="closeModal('modal-java-path')">×</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">JAVA_HOME</label>
+        <label class="form-label" data-i18n="tools.java_home">JAVA_HOME</label>
         <input type="text" id="java-home-path" value="{{ java_home }}" placeholder="C:/Program Files/Eclipse Adoptium/jdk-17">
-        <div class="form-hint">Ruta al directorio raíz del JDK instalado</div>
+        <div class="form-hint" data-i18n="tools.java_hint">Ruta al directorio raíz del JDK instalado</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -57,14 +58,14 @@
   <div class="modal" style="max-width:500px">
     <div class="modal-header">
       <span style="font-size:20px">🏗️</span>
-      <div class="modal-title">Configurar ruta de Maven</div>
+      <div class="modal-title" data-i18n="tools.maven_path">Configurar ruta de Maven</div>
       <button class="modal-close" onclick="closeModal('modal-maven-path')">×</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">MAVEN_HOME</label>
+        <label class="form-label" data-i18n="tools.maven_home">MAVEN_HOME</label>
         <input type="text" id="maven-home-path" value="{{ maven_home }}" placeholder="C:/MuleSoft/tools/maven/apache-maven-3.9.9">
-        <div class="form-hint">Ruta al directorio raíz de Maven</div>
+        <div class="form-hint" data-i18n="tools.maven_hint">Ruta al directorio raíz de Maven</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -126,7 +127,7 @@ function renderTools(tools) {
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
                 <span style="font-weight:700;font-size:15px">${meta.label}</span>
                 <span class="badge ${installed ? 'badge-success' : 'badge-danger'}">
-                  ${installed ? '✓ Instalado' : '✗ No encontrado'}
+                  ${installed ? t('tools.installed') : t('tools.not_found')}
                 </span>
               </div>
               <div style="font-size:12px;color:var(--text-2);margin-bottom:8px">${meta.desc}</div>
@@ -134,11 +135,11 @@ function renderTools(tools) {
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
-            ${canInstall && !installed ? `<button class="btn btn-primary btn-sm" onclick="installTool('${key}')">⬇️ Instalar (winget)</button>` : ''}
-            ${canInstall && installed  ? `<button class="btn btn-secondary btn-sm" onclick="installTool('${key}')">🔄 Reinstalar</button>` : ''}
-            ${key === 'vscode' && installed ? `<button class="btn btn-secondary btn-sm" onclick="installExtensions()">🧩 Instalar extensiones</button>` : ''}
-            ${canConfig ? `<button class="btn btn-ghost btn-sm" onclick="openModal('modal-${key}-path')">📁 Configurar ruta</button>` : ''}
-            ${key === 'git' && !installed ? `<a href="https://git-scm.com/download/win" target="_blank" class="btn btn-primary btn-sm">⬇️ Descargar Git</a>` : ''}
+            ${canInstall && !installed ? `<button class="btn btn-primary btn-sm" onclick="installTool('${key}')">${t('tools.install_btn')}</button>` : ''}
+            ${canInstall && installed  ? `<button class="btn btn-secondary btn-sm" onclick="installTool('${key}')">${t('tools.reinstall_btn')}</button>` : ''}
+            ${key === 'vscode' && installed ? `<button class="btn btn-secondary btn-sm" onclick="installExtensions()">${t('tools.install_ext')}</button>` : ''}
+            ${canConfig ? `<button class="btn btn-ghost btn-sm" onclick="openModal('modal-${key}-path')">${t('tools.config_path')}</button>` : ''}
+            ${key === 'git' && !installed ? `<a href="https://git-scm.com/download/win" target="_blank" class="btn btn-primary btn-sm">${t('tools.download')} Git</a>` : ''}
           </div>
         </div>
       </div>

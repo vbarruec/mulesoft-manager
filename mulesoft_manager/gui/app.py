@@ -67,6 +67,23 @@ def _workspace() -> Optional[tuple[Path, GlobalConfig]]:
     return root, GlobalConfig(root)
 
 
+def _vcs_org_url(client: ClientConfig) -> str:
+    """Construye la URL de la página de organización del cliente en su VCS."""
+    vcs_type = client.vcs_type
+    host = client.vcs_host or ""
+    ns = client.vcs_organization or client.vcs_username or ""
+
+    if vcs_type == "codecommit":
+        aws_region = client.get("vcs", "aws_region", default="us-east-1")
+        return (f"https://{aws_region}.console.aws.amazon.com"
+                f"/codesuite/codecommit/repositories?region={aws_region}")
+    elif vcs_type == "azure":
+        return f"https://dev.azure.com/{ns}" if ns else "https://dev.azure.com"
+    elif host:
+        return f"https://{host}/{ns}" if ns else f"https://{host}"
+    return ""
+
+
 def _client_data(client: ClientConfig) -> dict:
     """Serializa un ClientConfig a dict para JSON/template."""
     repos = client.repositories
@@ -95,6 +112,7 @@ def _client_data(client: ClientConfig) -> dict:
         "vcs_username": client.vcs_username,
         "vcs_email": client.vcs_email,
         "vcs_organization": client.vcs_organization,
+        "vcs_url": _vcs_org_url(client),          # ← URL directa al VCS
         "ssh_alias": client.ssh_alias,
         "ssh_key_name": client.ssh_key_name,
         "ssh_key_exists": client.ssh_key_path.exists(),

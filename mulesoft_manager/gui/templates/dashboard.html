@@ -113,22 +113,22 @@ async function doInit() {
   <div class="stat-card">
     <div class="stat-icon" style="background:var(--accent-soft)">👥</div>
     <div class="stat-value" style="color:var(--accent)">{{ client_count }}</div>
-    <div class="stat-label">Clientes configurados</div>
+    <div class="stat-label" data-i18n="dashboard.stat_clients">Clientes configurados</div>
   </div>
   <div class="stat-card">
     <div class="stat-icon" style="background:var(--success-soft)">📦</div>
     <div class="stat-value" style="color:var(--success)">{{ cloned_repos }}</div>
-    <div class="stat-label">Repos clonados / {{ total_repos }} totales</div>
+    <div class="stat-label" data-i18n="dashboard.stat_repos">Repos clonados</div>
   </div>
   <div class="stat-card">
     <div class="stat-icon" style="background:var(--purple-soft)">🔧</div>
     <div class="stat-value" style="color:var(--purple)">{{ tools_ok }}<span style="font-size:16px;color:var(--text-3)">/4</span></div>
-    <div class="stat-label">Herramientas instaladas</div>
+    <div class="stat-label" data-i18n="dashboard.stat_tools">Herramientas instaladas</div>
   </div>
   <div class="stat-card" onclick="window.location='/clients'" style="cursor:pointer">
     <div class="stat-icon" style="background:var(--warning-soft)">➕</div>
-    <div class="stat-value" style="font-size:20px;color:var(--warning);padding-top:6px">Nuevo cliente</div>
-    <div class="stat-label">Añadir configuración</div>
+    <div class="stat-value" style="font-size:20px;color:var(--warning);padding-top:6px" data-i18n="dashboard.stat_add">Nuevo cliente</div>
+    <div class="stat-label" data-i18n="dashboard.stat_add_sub">Añadir configuración</div>
   </div>
 </div>
 
@@ -139,29 +139,33 @@ async function doInit() {
   <div class="card">
     <div class="card-header" style="justify-content:space-between">
       <div>
-        <div class="card-title">Clientes</div>
-        <div class="card-sub">{{ client_count }} cliente{{ 's' if client_count != 1 else '' }}</div>
+        <div class="card-title" data-i18n="dashboard.card_clients">Clientes</div>
+        <div class="card-sub">{{ client_count }}</div>
       </div>
-      <a href="/clients" class="btn btn-ghost btn-sm">Ver todos →</a>
+      <a href="/clients" class="btn btn-ghost btn-sm" data-i18n="common.see_all">Ver todos →</a>
     </div>
     {% if clients %}
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Cliente</th><th>VCS</th><th>Región</th><th>Repos</th><th>Estado</th><th></th>
+            <th data-i18n="dashboard.col_client">Cliente</th>
+            <th data-i18n="dashboard.col_vcs">VCS</th>
+            <th data-i18n="dashboard.col_region">Región</th>
+            <th data-i18n="dashboard.col_repos">Repos</th>
+            <th data-i18n="dashboard.col_status">Estado</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {% for c in clients %}
+          {% set vcs_icons = {'github':'🐙','gitlab':'🦊','bitbucket':'🪣','codecommit':'🟧','azure':'🔷'} %}
           <tr>
             <td>
               <div style="font-weight:600">{{ c.display_name }}</div>
               <div style="font-size:11px;color:var(--text-3)">{{ c.name }}</div>
             </td>
-            <td>
-              <span class="badge badge-info">{{ c.vcs_display }}</span>
-            </td>
+            <td><span class="badge badge-info">{{ c.vcs_display }}</span></td>
             <td>
               <span class="badge {% if c.mule_region == 'eu' %}badge-purple{% else %}badge-info{% endif %}">
                 {{ c.mule_region.upper() }}
@@ -174,15 +178,29 @@ async function doInit() {
             </td>
             <td>
               {% if c.ssh_key_exists and c.workspace_exists %}
-                <span class="badge badge-success">✓ Listo</span>
+                <span class="badge badge-success" data-i18n="dashboard.badge_ready">✓ Listo</span>
               {% else %}
-                <span class="badge badge-warning">⚠ Incompleto</span>
+                <span class="badge badge-warning" data-i18n="dashboard.badge_incomplete">⚠ Incompleto</span>
               {% endif %}
             </td>
             <td class="td-actions">
-              <a href="/clients?selected={{ c.name }}" class="btn btn-ghost btn-sm" data-tip="Ver detalle">👁</a>
-              <button class="btn btn-ghost btn-sm" onclick="syncClient('{{ c.name }}')" data-tip="Sincronizar repos">🔄</button>
-              <button class="btn btn-ghost btn-sm" onclick="openVSCode('{{ c.name }}')" data-tip="Abrir VS Code">🖥️</button>
+              <!-- Abrir Git provider -->
+              {% if c.vcs_url %}
+              <a href="{{ c.vcs_url }}" target="_blank" rel="noopener"
+                 class="btn btn-ghost btn-sm"
+                 data-tip="{{ c.vcs_display }}">{{ vcs_icons.get(c.vcs_type,'🔗') }}</a>
+              {% endif %}
+              <!-- Abrir Anypoint Platform -->
+              <a href="{{ c.anypoint_url }}" target="_blank" rel="noopener"
+                 class="btn btn-ghost btn-sm"
+                 data-tip="Anypoint {{ c.mule_region.upper() }}">☁️</a>
+              <!-- Acciones rápidas -->
+              <a href="/clients?selected={{ c.name }}" class="btn btn-ghost btn-sm"
+                 data-tip="Ver detalle" data-i18n-title="dashboard.tip_detail">👁</a>
+              <button class="btn btn-ghost btn-sm" onclick="syncClient('{{ c.name }}')"
+                      data-tip="Sync repos" data-i18n-title="dashboard.tip_sync">🔄</button>
+              <button class="btn btn-ghost btn-sm" onclick="openVSCode('{{ c.name }}')"
+                      data-tip="VS Code" data-i18n-title="dashboard.tip_vscode">🖥️</button>
             </td>
           </tr>
           {% endfor %}
@@ -192,9 +210,9 @@ async function doInit() {
     {% else %}
     <div class="empty-state" style="padding:40px">
       <div class="empty-icon">👥</div>
-      <div class="empty-title">Sin clientes</div>
-      <div class="empty-sub">Añade tu primer cliente para empezar</div>
-      <button class="btn btn-primary mt-3" onclick="openModal('modal-add-client')">➕ Añadir cliente</button>
+      <div class="empty-title" data-i18n="dashboard.empty_clients">Sin clientes</div>
+      <div class="empty-sub" data-i18n="dashboard.empty_clients_sub">Añade tu primer cliente para empezar</div>
+      <button class="btn btn-primary mt-3" onclick="openModal('modal-add-client')" data-i18n="dashboard.add_btn">➕ Añadir cliente</button>
     </div>
     {% endif %}
   </div>
@@ -203,17 +221,17 @@ async function doInit() {
   <div style="display:flex;flex-direction:column;gap:16px">
 
     <div class="card">
-      <div class="card-header"><div class="card-title">⚡ Acciones rápidas</div></div>
+      <div class="card-header"><div class="card-title" data-i18n="dashboard.quick_actions">⚡ Acciones rápidas</div></div>
       <div class="card-body" style="display:flex;flex-direction:column;gap:8px;padding:12px">
-        <button class="btn btn-primary w-full" onclick="openModal('modal-add-client')">➕ Nuevo cliente</button>
-        <a href="/clients" class="btn btn-secondary w-full" style="justify-content:center">👥 Gestionar clientes</a>
-        <a href="/tools" class="btn btn-secondary w-full" style="justify-content:center">🔧 Herramientas</a>
-        <a href="/ssh" class="btn btn-secondary w-full" style="justify-content:center">🔑 SSH / Git</a>
+        <button class="btn btn-primary w-full" onclick="openModal('modal-add-client')" data-i18n="dashboard.new_client_btn">➕ Nuevo cliente</button>
+        <a href="/clients" class="btn btn-secondary w-full" style="justify-content:center" data-i18n="dashboard.btn_manage">👥 Gestionar clientes</a>
+        <a href="/tools" class="btn btn-secondary w-full" style="justify-content:center" data-i18n="dashboard.btn_tools">🔧 Herramientas</a>
+        <a href="/ssh" class="btn btn-secondary w-full" style="justify-content:center" data-i18n="dashboard.btn_ssh">🔑 SSH / Git</a>
       </div>
     </div>
 
     <div class="card" id="tools-summary-card">
-      <div class="card-header"><div class="card-title">🔧 Herramientas</div></div>
+      <div class="card-header"><div class="card-title" data-i18n="dashboard.tools_card">🔧 Herramientas</div></div>
       <div class="card-body" style="padding:12px 16px;display:flex;flex-direction:column;gap:8px" id="tools-list">
         <div style="text-align:center;padding:10px"><span class="spinner"></span></div>
       </div>

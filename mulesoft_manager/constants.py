@@ -81,7 +81,7 @@ VCS_TYPES = {
 # ---------------------------------------------------------------------------
 MULE_REGIONS = {
     "us": {
-        "display": "US (us1.anypoint.mulesoft.com)",
+        "display": "US (anypoint.mulesoft.com)",
         "anypoint_url": "https://anypoint.mulesoft.com",
         "nexus_url": "https://repository.mulesoft.org/nexus/content/repositories/public/",
     },
