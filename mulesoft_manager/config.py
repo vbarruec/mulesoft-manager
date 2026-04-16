@@ -454,15 +454,4 @@ def list_clients(root: Path) -> list[ClientConfig]:
     return configs
 
 
-# ---------------------------------------------------------------------------
-# Utilidad: merge profundo de dicts
-# ---------------------------------------------------------------------------
-
-def _deep_merge(base: dict, override: dict) -> dict:
-    """Merge recursivo de override en base (modifica base in-place)."""
-    for k, v in override.items():
-        if k in base and isinstance(base[k], dict) and isinstance(v, dict):
-            _deep_merge(base[k], v)
-        else:
-            base[k] = v
-    return base
+# ------------------------------------------------------------

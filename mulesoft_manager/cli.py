@@ -696,20 +696,4 @@ def ssh():
 @click.option("--type", "key_type", default=None,
               type=click.Choice(["ed25519", "rsa"]),
               help="Algoritmo de clave (default: ed25519)")
-def ssh_generate(name: str, force: bool, key_type: Optional[str]):
-    """Genera un par de claves SSH para el cliente."""
-    root, cfg = _get_workspace()
-    c = _get_client(root, name)
-    kt = key_type or cfg.ssh_key_type
-    key_path = generate_ssh_key(root, c, key_type=kt, bits=cfg.ssh_key_bits, force=force)
-    if key_path:
-        update_ssh_config(root, c)
-
-
-@ssh.command("show")
-@click.argument("name")
-def ssh_show(name: str):
-    """Muestra la clave pública SSH del cliente para copiar en el VCS."""
-    root, cfg = _get_workspace()
-    c = _get_client(root, name)
-    show_public_key(root, c)
+def ssh_generate(name: str, force

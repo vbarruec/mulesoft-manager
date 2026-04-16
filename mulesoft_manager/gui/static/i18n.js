@@ -546,19 +546,4 @@ function setLang(lang) {
   localStorage.setItem('mulesoft-lang', lang);
   applyTranslations();
   // Disparar evento por si algún componente necesita reaccionar
-  document.dispatchEvent(new CustomEvent('langchange', { detail: { lang } }));
-}
-
-/** Devuelve el idioma activo */
-function getLang() { return _lang; }
-
-/** Actualiza el aspecto del botón toggle */
-function _updateLangBtn() {
-  const btn = document.getElementById('lang-toggle-btn');
-  if (!btn) return;
-  btn.textContent = _lang === 'es' ? '🌐 EN' : '🌐 ES';
-  btn.title = _lang === 'es' ? 'Switch to English' : 'Cambiar a Español';
-}
-
-/* Aplicar traducciones al cargar el DOM */
-document.addEventListener('DOMContentLoaded', applyTranslations);
+  doc

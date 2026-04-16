@@ -99,10 +99,23 @@ async function checkAll() {
     <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;padding:40px">
       <span class="spinner"></span> &nbsp; Verificando herramientas…
     </div>`;
-  const r = await GET('/api/tools/status');
-  if (!r.ok) return;
-  toolsData = r.tools;
-  renderTools(r.tools);
+  try {
+    const r = await GET('/api/tools/status');
+    if (!r.ok) {
+      document.getElementById('tools-grid').innerHTML =
+        `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--danger)">
+          ❌ Error al verificar herramientas: ${r.error || 'respuesta inesperada'}
+        </div>`;
+      return;
+    }
+    toolsData = r.tools;
+    renderTools(r.tools);
+  } catch(e) {
+    document.getElementById('tools-grid').innerHTML =
+      `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--danger)">
+        ❌ Error de conexión: ${e.message}
+      </div>`;
+  }
 }
 
 function renderTools(tools) {

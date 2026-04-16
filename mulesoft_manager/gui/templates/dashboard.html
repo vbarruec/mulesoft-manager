@@ -7,8 +7,8 @@
 {% block topbar_actions %}
   {% if initialized %}
     <span class="chip"><span class="dot dot-success"></span>Workspace activo</span>
-    <button class="btn btn-primary" onclick="openModal('modal-add-client')">
-      ＋ Nuevo cliente
+    <button class="btn btn-primary" onclick="sessionStorage.setItem('mulesoft_open_new','1');window.location='/clients'">
+      ➕ Nuevo cliente
     </button>
   {% endif %}
 {% endblock %}
@@ -125,7 +125,7 @@ async function doInit() {
     <div class="stat-value" style="color:var(--purple)">{{ tools_ok }}<span style="font-size:16px;color:var(--text-3)">/4</span></div>
     <div class="stat-label" data-i18n="dashboard.stat_tools">Herramientas instaladas</div>
   </div>
-  <div class="stat-card" onclick="window.location='/clients'" style="cursor:pointer">
+  <div class="stat-card" onclick="sessionStorage.setItem('mulesoft_open_new','1');window.location='/clients'" style="cursor:pointer">
     <div class="stat-icon" style="background:var(--warning-soft)">➕</div>
     <div class="stat-value" style="font-size:20px;color:var(--warning);padding-top:6px" data-i18n="dashboard.stat_add">Nuevo cliente</div>
     <div class="stat-label" data-i18n="dashboard.stat_add_sub">Añadir configuración</div>

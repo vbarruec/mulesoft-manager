@@ -109,7 +109,4 @@ repositories:
 #   type: azure
 #   host: ssh.dev.azure.com
 #   username: mi_usuario@empresa.com
-#   git_name: Mi Nombre
-#   email: mi_usuario@empresa.com
-#   organization: mi_organizacion
-#   azure_project: MiProyecto
+#   git_nam

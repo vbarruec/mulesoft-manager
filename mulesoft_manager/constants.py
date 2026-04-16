@@ -19,25 +19,8 @@ DEFAULT_MAVEN_VERSION = "3.9.9"
 # Extensiones VS Code recomendadas para MuleSoft
 # ---------------------------------------------------------------------------
 VSCODE_EXTENSIONS = [
-    # MuleSoft
-    "salesforce.mulesoft-pack",          # Anypoint Extension Pack
-    # Java
-    "redhat.java",                        # Language Support for Java
-    "vscjava.vscode-java-pack",          # Java Extension Pack
-    "vscjava.vscode-java-debug",         # Debugger for Java
-    "vscjava.vscode-maven",              # Maven for Java
-    # XML / YAML / DataWeave
-    "redhat.vscode-xml",                 # XML Language Support
-    "redhat.vscode-yaml",                # YAML Language Support
-    # Git
-    "eamodio.gitlens",                   # GitLens
-    "mhutchie.git-graph",                # Git Graph
-    "donjayamanne.githistory",           # Git History
-    # Utilidades generales
-    "ms-vscode.powershell",              # PowerShell
-    "ms-vscode-remote.remote-ssh",       # Remote SSH
-    "streetsidesoftware.code-spell-checker",  # Spell Checker
-    "yzhang.markdown-all-in-one",        # Markdown
+    # MuleSoft — Anypoint Extension Pack (incluye soporte Mule, DataWeave, XML, etc.)
+    "salesforce.mulesoft-pack",
 ]
 
 # ---------------------------------------------------------------------------

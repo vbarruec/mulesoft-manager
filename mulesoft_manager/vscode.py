@@ -238,9 +238,4 @@ def create_maven_settings(root: Path, client: ClientConfig) -> Path:
     )
 
     settings_path.write_text(content, encoding="utf-8")
-    console.print(f"[green]Maven settings.xml creado: {settings_path}[/green]")
-
-    if not client.anypoint_username:
-        console.print(f"[yellow]⚠ Edita las credenciales de Anypoint en: {settings_path}[/yellow]")
-
-    return settings_path
+    co

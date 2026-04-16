@@ -194,10 +194,4 @@ def t(key: str, **kwargs: Any) -> str:
     Devuelve la traducción de una clave.
     Si no existe en el idioma activo, cae al español.
     Soporta formato: t('wizard.confirm_name', display='Acme', name='acme')
-    """
-    text = (
-        _TRANSLATIONS.get(_current_lang, {}).get(key)
-        or _TRANSLATIONS.get("es", {}).get(key)
-        or key
-    )
-    return text.format(**kwargs) if kwargs else text
+ 

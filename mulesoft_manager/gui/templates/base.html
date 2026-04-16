@@ -408,6 +408,105 @@
 </head>
 <body>
 
+<!-- ===== GLOBAL JS (cargado antes del contenido para que las páginas puedan usarlo) == -->
+<script>
+  /* ── Toast ─────────────────────────────────────────────────────────── */
+  function toast(msg, type = 'info', duration = 4000) {
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `<span>${icons[type] || ''}</span><span style="flex:1">${msg}</span>
+      <button onclick="this.parentElement.remove()" style="color:var(--text-3);font-size:16px;padding:0 4px">×</button>`;
+    const container = document.getElementById('toast-container');
+    if (container) container.appendChild(el);
+    else document.body.appendChild(el);
+    if (duration > 0) setTimeout(() => el.remove(), duration);
+    return el;
+  }
+
+  /* ── Modal ─────────────────────────────────────────────────────────── */
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) { el.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  }
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('open'); document.body.style.overflow = ''; }
+  }
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('modal-backdrop')) {
+      e.target.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+        m.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    }
+  });
+
+  /* ── Tabs ───────────────────────────────────────────────────────────── */
+  function initTabs(container) {
+    const btns = container.querySelectorAll('.tab-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        btns.forEach(b => {
+          const pane = document.getElementById(b.dataset.tab);
+          if (pane) pane.classList.remove('active');
+        });
+        const target = document.getElementById(btn.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+  }
+  // Los tabs estáticos se inicializan cuando el DOM está listo
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tabs').forEach(initTabs);
+  });
+
+  /* ── API fetch helpers ──────────────────────────────────────────────── */
+  async function api(method, url, body = null) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    };
+    if (body !== null) opts.body = JSON.stringify(body);
+    const r = await fetch(url, opts);
+    return r.json();
+  }
+  const GET    = url      => api('GET', url);
+  const POST   = (url, b) => api('POST', url, b);
+  const PUT    = (url, b) => api('PUT', url, b);
+  const DELETE = url      => api('DELETE', url);
+
+  /* ── Copy to clipboard ──────────────────────────────────────────────── */
+  function copyText(text, label) {
+    const lbl = label || (typeof t === 'function' ? t('common.copy') : 'Texto');
+    navigator.clipboard.writeText(text).then(() => {
+      const msg = (typeof getLang === 'function' && getLang() === 'en')
+        ? `${lbl} copied to clipboard`
+        : `${lbl} copiado al portapapeles`;
+      toast(msg, 'success');
+    });
+  }
+
+  /* ── Confirm dialog ─────────────────────────────────────────────────── */
+  function confirm2(msg, onConfirm) {
+    const backdrop = document.getElementById('modal-confirm');
+    document.getElementById('modal-confirm-msg').textContent = msg;
+    backdrop.querySelector('.modal-title').textContent = typeof t === 'function' ? t('modal.confirm_title') : 'Confirmar';
+    backdrop.querySelector('.btn-secondary').textContent = typeof t === 'function' ? t('common.cancel') : 'Cancelar';
+    document.getElementById('modal-confirm-btn').textContent = typeof t === 'function' ? t('modal.confirm_btn') : 'Confirmar';
+    document.getElementById('modal-confirm-btn').onclick = () => { closeModal('modal-confirm'); onConfirm(); };
+    openModal('modal-confirm');
+  }
+</script>
+
 <!-- ===== SIDEBAR ===================================================== -->
 <nav class="sidebar">
   <div class="sidebar-logo">
@@ -488,101 +587,6 @@
 
 <!-- ===== TOAST CONTAINER ============================================ -->
 <div id="toast-container"></div>
-
-<!-- ===== GLOBAL JS ================================================== -->
-<script>
-  /* ── Toast ─────────────────────────────────────────────────────────── */
-  function toast(msg, type = 'info', duration = 4000) {
-    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-    const el = document.createElement('div');
-    el.className = `toast toast-${type}`;
-    el.innerHTML = `<span>${icons[type] || ''}</span><span style="flex:1">${msg}</span>
-      <button onclick="this.parentElement.remove()" style="color:var(--text-3);font-size:16px;padding:0 4px">×</button>`;
-    document.getElementById('toast-container').appendChild(el);
-    if (duration > 0) setTimeout(() => el.remove(), duration);
-    return el;
-  }
-
-  /* ── Modal ─────────────────────────────────────────────────────────── */
-  function openModal(id) {
-    document.getElementById(id).classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeModal(id) {
-    document.getElementById(id).classList.remove('open');
-    document.body.style.overflow = '';
-  }
-  // Cerrar modal al click fuera
-  document.addEventListener('click', e => {
-    if (e.target.classList.contains('modal-backdrop')) {
-      e.target.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-  });
-  // Cerrar con Escape
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('.modal-backdrop.open').forEach(m => {
-        m.classList.remove('open');
-        document.body.style.overflow = '';
-      });
-    }
-  });
-
-  /* ── Tabs ───────────────────────────────────────────────────────────── */
-  function initTabs(container) {
-    const btns = container.querySelectorAll('.tab-btn');
-    const panes = container.querySelectorAll('.tab-pane');
-    btns.forEach((btn, i) => {
-      btn.addEventListener('click', () => {
-        btns.forEach(b => b.classList.remove('active'));
-        panes.forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        const target = document.getElementById(btn.dataset.tab);
-        if (target) target.classList.add('active');
-      });
-    });
-  }
-  document.querySelectorAll('.tabs').forEach(initTabs);
-
-  /* ── API fetch helpers ──────────────────────────────────────────────── */
-  async function api(method, url, body = null) {
-    const opts = {
-      method,
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    };
-    if (body !== null) opts.body = JSON.stringify(body);
-    const r = await fetch(url, opts);
-    return r.json();
-  }
-  const GET    = url      => api('GET', url);
-  const POST   = (url, b) => api('POST', url, b);
-  const PUT    = (url, b) => api('PUT', url, b);
-  const DELETE = url      => api('DELETE', url);
-
-  /* ── Copy to clipboard ──────────────────────────────────────────────── */
-  function copyText(text, label) {
-    const lbl = label || t('common.copy');
-    navigator.clipboard.writeText(text).then(() => {
-      const msg = getLang() === 'en'
-        ? `${lbl} copied to clipboard`
-        : `${lbl} copiado al portapapeles`;
-      toast(msg, 'success');
-    });
-  }
-
-  /* ── Confirm dialog ─────────────────────────────────────────────────── */
-  function confirm2(msg, onConfirm) {
-    const backdrop = document.getElementById('modal-confirm');
-    document.getElementById('modal-confirm-msg').textContent = msg;
-    // Actualizar etiquetas del modal con el idioma actual
-    backdrop.querySelector('.modal-title').textContent = t('modal.confirm_title');
-    backdrop.querySelector('.btn-secondary').textContent = t('common.cancel');
-    document.getElementById('modal-confirm-btn').textContent = t('modal.confirm_btn');
-    document.getElementById('modal-confirm-btn').onclick = () => { closeModal('modal-confirm'); onConfirm(); };
-    openModal('modal-confirm');
-  }
-</script>
 
 <!-- Confirm Modal (global) -->
 <div class="modal-backdrop" id="modal-confirm">

@@ -25,5 +25,4 @@ mulesoft-manager = "mulesoft_manager.cli:cli"
 mulesoft-manager-gui = "start_gui:main"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["mulesoft_manager*"]
+where = 

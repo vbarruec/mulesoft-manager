@@ -393,18 +393,4 @@ mulesoft-manager ssh show acme        # copiar nueva clave pública en GitLab
 
 ```powershell
 # CLI
-mulesoft-manager client update acme --add-repo
-mulesoft-manager client sync acme --full
-
-# GUI: Clientes → seleccionar cliente → Repositorios → Añadir repo
-```
-
-### Cambiar región Mule (US → EU)
-
-```powershell
-# CLI
-mulesoft-manager client update acme --region eu
-
-# GUI: Clientes → seleccionar cliente → General → Cambiar región
-# El botón ☁️ Anypoint cambiará automáticamente a eu1.anypoint.mulesoft.com
-```
+mulesoft-manager client update acme --a

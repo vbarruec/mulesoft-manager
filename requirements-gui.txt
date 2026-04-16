@@ -10,4 +10,4 @@ PyYAML>=6.0
 requests>=2.31.0
 
 # === GUI Web ===
-flask>=3.0.0
+f

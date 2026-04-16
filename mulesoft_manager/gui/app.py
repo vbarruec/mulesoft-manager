@@ -67,23 +67,6 @@ def _workspace() -> Optional[tuple[Path, GlobalConfig]]:
     return root, GlobalConfig(root)
 
 
-def _vcs_org_url(client: ClientConfig) -> str:
-    """Construye la URL de la página de organización del cliente en su VCS."""
-    vcs_type = client.vcs_type
-    host = client.vcs_host or ""
-    ns = client.vcs_organization or client.vcs_username or ""
-
-    if vcs_type == "codecommit":
-        aws_region = client.get("vcs", "aws_region", default="us-east-1")
-        return (f"https://{aws_region}.console.aws.amazon.com"
-                f"/codesuite/codecommit/repositories?region={aws_region}")
-    elif vcs_type == "azure":
-        return f"https://dev.azure.com/{ns}" if ns else "https://dev.azure.com"
-    elif host:
-        return f"https://{host}/{ns}" if ns else f"https://{host}"
-    return ""
-
-
 def _client_data(client: ClientConfig) -> dict:
     """Serializa un ClientConfig a dict para JSON/template."""
     repos = client.repositories
@@ -112,7 +95,6 @@ def _client_data(client: ClientConfig) -> dict:
         "vcs_username": client.vcs_username,
         "vcs_email": client.vcs_email,
         "vcs_organization": client.vcs_organization,
-        "vcs_url": _vcs_org_url(client),          # ← URL directa al VCS
         "ssh_alias": client.ssh_alias,
         "ssh_key_name": client.ssh_key_name,
         "ssh_key_exists": client.ssh_key_path.exists(),
@@ -440,6 +422,39 @@ def api_client_sync(name: str):
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/clients/<name>/open-terminal", methods=["POST"])
+def api_client_open_terminal(name: str):
+    ws = _workspace()
+    if ws is None:
+        return jsonify({"ok": False}), 400
+    root, cfg = ws
+    c = ClientConfig(root, name)
+    if not c.exists():
+        return jsonify({"ok": False}), 404
+
+    project_dir = c.project_dir
+    try:
+        import shutil
+        # Intentar abrir Git Bash
+        gitbash_candidates = [
+            shutil.which("git-bash"),
+            r"C:\Program Files\Git\git-bash.exe",
+            r"C:\Program Files (x86)\Git\git-bash.exe",
+        ]
+        gitbash = next((p for p in gitbash_candidates if p and Path(p).exists()), None)
+        if gitbash:
+            subprocess.Popen([gitbash, f"--cd={project_dir}"])
+        else:
+            # Fallback: abrir PowerShell en la carpeta del proyecto
+            subprocess.Popen(
+                ["powershell", "-NoExit", "-Command", f"Set-Location '{project_dir}'"],
+                creationflags=subprocess.CREATE_NEW_CONSOLE if sys.platform == "win32" else 0
+            )
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/clients/<name>/open", methods=["POST"])
 def api_client_open(name: str):
     ws = _workspace()
@@ -461,6 +476,56 @@ def api_client_open(name: str):
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# API: Git remoto
+# ---------------------------------------------------------------------------
+
+@app.route("/api/git/branches")
+def api_git_branches():
+    url = request.args.get("url", "").strip()
+    client_name = request.args.get("client", "").strip()
+    if not url:
+        return jsonify({"ok": False, "error": "URL requerida"})
+
+    ws = _workspace()
+    if ws is None:
+        return jsonify({"ok": False, "error": "No inicializado"})
+    root, cfg = ws
+
+    try:
+        env = os.environ.copy()
+        # Si hay cliente, usar su SSH config
+        if client_name:
+            try:
+                c = ClientConfig(root, client_name)
+                ssh_config = root / ".ssh" / "config"
+                if ssh_config.exists():
+                    env["GIT_SSH_COMMAND"] = f'ssh -F "{ssh_config}" -o StrictHostKeyChecking=accept-new'
+            except Exception:
+                pass
+
+        result = subprocess.run(
+            ["git", "ls-remote", "--heads", url],
+            capture_output=True, text=True, timeout=15, env=env
+        )
+        branches = []
+        for line in result.stdout.splitlines():
+            if "\t" in line:
+                ref = line.split("\t", 1)[1].strip()
+                if ref.startswith("refs/heads/"):
+                    branches.append(ref.replace("refs/heads/", ""))
+        # Ordenar: main/master primero
+        def branch_sort(b):
+            if b in ("main", "master"): return (0, b)
+            return (1, b)
+        branches.sort(key=branch_sort)
+        return jsonify({"ok": True, "branches": branches})
+    except subprocess.TimeoutExpired:
+        return jsonify({"ok": False, "error": "Timeout conectando al repositorio"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
 
 
 # ---------------------------------------------------------------------------
