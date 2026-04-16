@@ -466,7 +466,7 @@ function renderClientDetail(c) {
           </div>
           <div class="card-footer">
             <button class="btn btn-ghost btn-sm" onclick="showEditVcs('${c.name}','${c.vcs_type}','${c.vcs_host}','${c.vcs_username}','${c.vcs_email}','${c.vcs_organization||''}')">✏️ Editar VCS</button>
-            <button class="btn btn-ghost btn-sm" onclick="openGitBash('${c.name}')">🌿 Git Bash</button>
+            <a href="${getVcsUrl(c)}" target="_blank" class="btn btn-ghost btn-sm">🌿 ${c.vcs_display}</a>
           </div>
         </div>
         <div class="card">
@@ -780,11 +780,21 @@ async function addRepo() {
   } else toast(r.error || 'Error', 'error');
 }
 
-/* ── Abrir Git Bash ─────────────────────────────────────────────────────── */
-async function openGitBash(name) {
-  const r = await POST(`/api/clients/${name}/open-terminal`, {});
-  if (!r.ok) toast(r.error || 'No se pudo abrir Git Bash', 'warning');
-  else toast('Abriendo terminal Git…', 'success');
+/* ── URL de la plataforma VCS del cliente ───────────────────────────────── */
+function getVcsUrl(c) {
+  const org  = c.vcs_organization || c.vcs_username || '';
+  const host = c.vcs_host || '';
+  switch (c.vcs_type) {
+    case 'codecommit':
+      // La URL de CodeCommit no sigue el patrón host/org — enlazamos a la consola AWS
+      return 'https://console.aws.amazon.com/codesuite/codecommit/repositories';
+    case 'azure':
+      // El host SSH de Azure es ssh.dev.azure.com pero la web es dev.azure.com/{org}
+      return `https://dev.azure.com/${org}`;
+    default:
+      // GitHub, GitLab, Bitbucket, instancias propias: https://<host>/<org>
+      return org ? `https://${host}/${org}` : `https://${host}`;
+  }
 }
 
 /* ── Auto-derivación de nombres ──────────────────────────────────────────── */
